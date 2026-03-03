@@ -1,145 +1,177 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Configuración inicial y estado simulado
-    const calendarEl = document.getElementById('calendar');
-    const modalMovimiento = new bootstrap.Modal(document.getElementById('modalMovimiento'));
-    const formMovimiento = document.getElementById('formMovimiento');
-    const btnEliminar = document.getElementById('btnEliminar');
+    // 1. DOM Elements
+    const calendarElement = document.getElementById('calendar');
+    const transactionModalElement = document.getElementById('transactionModal');
+    const transactionModal = new bootstrap.Modal(transactionModalElement);
+    const transactionForm = document.getElementById('transactionForm');
+    const btnDelete = document.getElementById('btnDelete');
+    const btnSave = document.getElementById('btnSave');
+    const roleSelector = document.getElementById('roleSelector');
     
-    // Simulación del usuario actual (Cambia a 'basico' o 'admin' para probar)
-    const currentUser = { rol: 'admin', id: 1 }; 
-    
-    // Estado local para simular la base de datos temporalmente
-    let movimientos = [];
-    let saldoActual = 0;
+    // 2. State Management
+    let currentUser = { role: 'basic', id: 1 }; // Default role
+    let transactions = [];
+    let currentBalance = 0;
 
-    // 2. Inicialización de FullCalendar
-    const calendar = new FullCalendar.Calendar(calendarEl, {
+    // Change role for testing dynamically
+    roleSelector.addEventListener('change', (e) => {
+        currentUser.role = e.target.value;
+        showNotification(`Role changed to ${currentUser.role.toUpperCase()}`, 'info');
+    });
+
+    // 3. FullCalendar Initialization
+    const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
-        locale: 'es',
-        events: movimientos,
+        locale: 'en',
+        events: transactions,
         
-        // Al clicar en un día: Crear movimiento (Ambos roles)
+        // When clicking a day: Create transaction (All roles can create)
         dateClick: function(info) {
-            prepararModalCreacion(info.dateStr);
-            modalMovimiento.show();
+            prepareModalForCreation(info.dateStr);
+            transactionModal.show();
         },
 
-        // Al clicar en un evento: Editar/Eliminar (Solo Admin)
+        // When clicking an event: Edit/Delete depending on role
         eventClick: function(info) {
-            if (currentUser.rol === 'admin' || currentUser.rol === 'superadmin') {
-                prepararModalEdicion(info.event);
-                modalMovimiento.show();
+            if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+                prepareModalForEdition(info.event);
+                transactionModal.show();
             } else {
-                mostrarNotificacion('No tienes permisos para editar o eliminar movimientos.', 'warning');
+                showNotification('Basic users do not have permissions to edit or delete transactions.', 'warning');
             }
         }
     });
+    
     calendar.render();
 
-    // 3. Funciones de la Interfaz
-    function recalcularSaldo() {
-        saldoActual = movimientos.reduce((total, mov) => {
-            const importe = parseFloat(mov.extendedProps.importe);
-            return mov.extendedProps.categoria === 'INGRESO' ? total + importe : total - importe;
+    // 4. Interface Functions
+    function recalculateBalance() {
+        currentBalance = transactions.reduce((total, transaction) => {
+            const amount = parseFloat(transaction.extendedProps.amount);
+            return transaction.extendedProps.category === 'INCOME' ? total + amount : total - amount;
         }, 0);
         
-        actualizarColorSaldo(saldoActual);
+        updateBalanceColor(currentBalance);
     }
 
-    function actualizarColorSaldo(monto) {
-        const saldoElement = document.getElementById('saldo-valor');
-        saldoElement.innerText = monto.toFixed(2);
+    function updateBalanceColor(amount) {
+        const balanceElement = document.getElementById('balanceValue');
+        balanceElement.innerText = amount.toFixed(2);
         
-        // Limpiar clases previas
-        saldoElement.classList.remove('text-success', 'text-warning', 'text-danger');
+        balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
         
-        if (monto > 0) saldoElement.classList.add('text-success');
-        else if (monto === 0) saldoElement.classList.add('text-warning');
-        else saldoElement.classList.add('text-danger');
+        if (amount > 0) balanceElement.classList.add('text-success');
+        else if (amount === 0) balanceElement.classList.add('text-warning');
+        else balanceElement.classList.add('text-danger');
     }
 
-    // 4. Gestión del Modal
-    function prepararModalCreacion(fecha) {
-        document.getElementById('modalTitle').innerText = 'Nuevo Movimiento';
-        document.getElementById('movimientoId').value = '';
-        document.getElementById('desc').value = '';
-        document.getElementById('importe').value = '';
-        document.getElementById('categoria').value = 'GASTO';
+    // 5. Modal Management
+    function prepareModalForCreation(date) {
+        document.getElementById('modalTitle').innerText = 'New Transaction';
+        document.getElementById('transactionId').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('category').value = 'EXPENSE';
         
-        // Campo fecha (oculto en el HTML o en una variable, pero lo guardamos para el evento)
-        document.getElementById('formMovimiento').dataset.fecha = fecha;
+        // Store date in form dataset
+        transactionForm.dataset.date = date;
         
-        btnEliminar.classList.add('d-none'); // Ocultar botón eliminar
+        btnDelete.classList.add('d-none'); // Hide delete button
+        btnSave.classList.remove('d-none'); // Show save button
+        
+        // Enable fields (in case they were disabled by an admin view)
+        toggleFormFields(false);
     }
 
-    function prepararModalEdicion(evento) {
-        document.getElementById('modalTitle').innerText = 'Modificar Movimiento';
-        document.getElementById('movimientoId').value = evento.id;
-        document.getElementById('desc').value = evento.title;
-        document.getElementById('importe').value = evento.extendedProps.importe;
-        document.getElementById('categoria').value = evento.extendedProps.categoria;
+    function prepareModalForEdition(event) {
+        document.getElementById('modalTitle').innerText = 'Transaction Details';
+        document.getElementById('transactionId').value = event.id;
+        document.getElementById('description').value = event.title;
+        document.getElementById('amount').value = event.extendedProps.amount;
+        document.getElementById('category').value = event.extendedProps.category;
         
-        // La fecha se mantiene intacta y no se muestra en el form para modificar
-        document.getElementById('formMovimiento').dataset.fecha = evento.startStr;
+        transactionForm.dataset.date = event.startStr;
         
-        btnEliminar.classList.remove('d-none'); // Mostrar botón eliminar para Admin
+        // Role Logic for Edit/Delete
+        btnDelete.classList.remove('d-none'); // Admin and Superadmin can delete
+        
+        if (currentUser.role === 'admin') {
+            // Admin can view and delete, but NOT modify
+            btnSave.classList.add('d-none');
+            toggleFormFields(true);
+        } else if (currentUser.role === 'superadmin') {
+            // Superadmin can view, modify and delete
+            btnSave.classList.remove('d-none');
+            toggleFormFields(false);
+        }
     }
 
-    // 5. Simulación de Envío de Formulario (Crear/Modificar)
-    formMovimiento.addEventListener('submit', function(e) {
+    function toggleFormFields(disabled) {
+        document.getElementById('description').disabled = disabled;
+        document.getElementById('amount').disabled = disabled;
+        document.getElementById('category').disabled = disabled;
+    }
+
+    // 6. Form Submission (Create/Update)
+    transactionForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const id = document.getElementById('movimientoId').value;
-        const desc = document.getElementById('desc').value;
-        const importe = document.getElementById('importe').value;
-        const categoria = document.getElementById('categoria').value;
-        const fecha = document.getElementById('formMovimiento').dataset.fecha;
+        const id = document.getElementById('transactionId').value;
+        const description = document.getElementById('description').value;
+        const amount = document.getElementById('amount').value;
+        const category = document.getElementById('category').value;
+        const date = transactionForm.dataset.date;
 
-        const nuevoMovimiento = {
-            id: id ? id : Date.now().toString(), // ID simulado
-            title: desc,
-            start: fecha,
-            color: categoria === 'INGRESO' ? '#28a745' : '#dc3545',
-            extendedProps: { importe: importe, categoria: categoria }
+        const newTransaction = {
+            id: id ? id : Date.now().toString(), // Simulated ID, backend will provide this later
+            title: description,
+            start: date,
+            color: category === 'INCOME' ? '#28a745' : '#dc3545',
+            extendedProps: { amount: amount, category: category }
         };
 
         if (id) {
-            // Lógica de Modificar (Admin)
-            const eventoExistente = calendar.getEventById(id);
-            eventoExistente.remove();
-            movimientos = movimientos.filter(m => m.id !== id);
+            // Update logic (Superadmin only)
+            const existingEvent = calendar.getEventById(id);
+            if (existingEvent) existingEvent.remove();
+            transactions = transactions.filter(t => t.id !== id);
+            showNotification('Transaction updated successfully', 'success');
+        } else {
+            showNotification('Transaction created successfully', 'success');
         }
 
-        // Lógica de Añadir
-        calendar.addEvent(nuevoMovimiento);
-        movimientos.push(nuevoMovimiento);
+        // Add to calendar and state
+        calendar.addEvent(newTransaction);
+        transactions.push(newTransaction);
         
-        recalcularSaldo();
-        modalMovimiento.hide();
+        recalculateBalance();
+        transactionModal.hide();
     });
 
-    // 6. Lógica de Eliminar (Admin)
-    btnEliminar.addEventListener('click', function() {
-        const id = document.getElementById('movimientoId').value;
+    // 7. Delete Logic (Admin & Superadmin)
+    btnDelete.addEventListener('click', function() {
+        const id = document.getElementById('transactionId').value;
         if (id) {
-            const eventoExistente = calendar.getEventById(id);
-            eventoExistente.remove();
-            movimientos = movimientos.filter(m => m.id !== id);
+            const existingEvent = calendar.getEventById(id);
+            if (existingEvent) existingEvent.remove();
+            transactions = transactions.filter(t => t.id !== id);
             
-            recalcularSaldo();
-            modalMovimiento.hide();
-            mostrarNotificacion('Movimiento eliminado correctamente', 'info');
+            recalculateBalance();
+            transactionModal.hide();
+            showNotification('Transaction deleted successfully by Admin', 'info');
         }
     });
 
-    function mostrarNotificacion(mensaje, tipo) {
-        const notiEl = document.getElementById('notificaciones');
-        const msgEl = document.getElementById('msg-notificacion');
+    // 8. Notifications
+    function showNotification(message, type) {
+        const notificationArea = document.getElementById('notificationArea');
+        const notificationMessage = document.getElementById('notificationMessage');
         
-        notiEl.className = `alert alert-${tipo}`;
-        msgEl.innerText = mensaje;
-        notiEl.classList.remove('d-none');
+        notificationArea.className = `alert alert-${type} mt-3`;
+        notificationMessage.innerText = message;
+        notificationArea.classList.remove('d-none');
         
-        setTimeout(() => notiEl.classList.add('d-none'), 5000);
+        // Auto-hide after 5 seconds
+        setTimeout(() => notificationArea.classList.add('d-none'), 5000);
     }
 });
