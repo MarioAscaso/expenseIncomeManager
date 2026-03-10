@@ -23,22 +23,19 @@ public class Movement {
     private String description;
 
     @Column(nullable = false)
-    private BigDecimal amount; // Guardaremos el valor en positivo siempre
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MovementTypeEnum type; // INCOME o EXPENSE
+    private MovementTypeEnum type;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    // Relación: Muchos movimientos pertenecen a un Usuario
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Método que se ejecuta justo antes de guardar en base de datos
-    // Así cumplimos el requisito de: "Esta fecha será recogida por el sistema"
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

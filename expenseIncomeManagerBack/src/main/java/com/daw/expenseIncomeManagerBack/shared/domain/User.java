@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "users") // "user" es palabra reservada en algunas BD, mejor "users"
-@Data // Genera getters, setters, toString, etc. (Requiere Lombok)
+@Table(name = "users")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -27,7 +27,6 @@ public class User {
     @Column(nullable = false)
     private RoleEnum role;
 
-    // Almacenamos el saldo actual para acceso rápido (como pedía el enunciado)
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 }
