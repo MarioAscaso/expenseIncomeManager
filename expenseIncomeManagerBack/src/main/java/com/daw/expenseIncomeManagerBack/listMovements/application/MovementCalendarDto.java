@@ -19,4 +19,5 @@ public class MovementCalendarDto {
     private String description;
     private BigDecimal amount;
     private String type;
+    private String attachedFileUrl;
 }

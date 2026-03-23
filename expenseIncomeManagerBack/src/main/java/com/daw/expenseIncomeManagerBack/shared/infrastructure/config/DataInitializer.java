@@ -1,5 +1,6 @@
 package com.daw.expenseIncomeManagerBack.shared.infrastructure.config;
 
+import com.daw.expenseIncomeManagerBack.shared.domain.Account;
 import com.daw.expenseIncomeManagerBack.shared.domain.RoleEnum;
 import com.daw.expenseIncomeManagerBack.shared.domain.User;
 import com.daw.expenseIncomeManagerBack.shared.domain.UserRepository;
@@ -23,31 +24,34 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            System.out.println("Base de datos vacía. Creando usuarios por defecto...");
+            System.out.println("Base de datos vacía. Creando usuarios y cuentas por defecto...");
 
+            // --- SUPERADMIN ---
             User superAdmin = new User();
             superAdmin.setUsername("superadmin");
-            superAdmin.setPassword(passwordEncoder.encode("1234")); // Contraseña encriptada
+            superAdmin.setPassword(passwordEncoder.encode("1234"));
             superAdmin.setRole(RoleEnum.SUPERADMIN);
-            superAdmin.setBalance(new BigDecimal("1500.00"));
+            superAdmin.setAccount(new Account(null, new BigDecimal("1500.00"))); // Enlazamos su cuenta
 
+            // --- ADMIN ---
             User admin = new User();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("1234"));
             admin.setRole(RoleEnum.ADMIN);
-            admin.setBalance(new BigDecimal("500.00"));
+            admin.setAccount(new Account(null, new BigDecimal("500.00"))); // Enlazamos su cuenta
 
+            // --- USER ---
             User basicUser = new User();
             basicUser.setUsername("user");
             basicUser.setPassword(passwordEncoder.encode("1234"));
             basicUser.setRole(RoleEnum.BASIC);
-            basicUser.setBalance(new BigDecimal("100.00"));
+            basicUser.setAccount(new Account(null, new BigDecimal("100.00"))); // Enlazamos su cuenta
 
             userRepository.save(superAdmin);
             userRepository.save(admin);
             userRepository.save(basicUser);
 
-            System.out.println("¡Usuarios creados con éxito!");
+            System.out.println("¡Usuarios y Cuentas creados con éxito!");
         }
     }
 }

@@ -31,9 +31,9 @@ public class DeleteMovementApp implements DeleteMovementUseCase {
 
         // 3. Revertimos el saldo en la cuenta del usuario
         if (movement.getType().name().equals("INCOME")) {
-            user.setBalance(user.getBalance().subtract(movement.getAmount())); // Si era ingreso, restamos
+            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount())); // Si era ingreso, restamos
         } else {
-            user.setBalance(user.getBalance().add(movement.getAmount())); // Si era gasto, sumamos
+            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount())); // Si era gasto, sumamos
         }
         userRepository.save(user);
 

@@ -47,7 +47,7 @@ public class ListMovementsApp implements ListMovementsUseCase {
             dto.setBackgroundColor("#dc3545"); // Rojo Bootstrap
             dto.setBorderColor("#dc3545");
         }
-
+        dto.setAttachedFileUrl(movement.getAttachedFileUrl());
         return dto;
     }
 }

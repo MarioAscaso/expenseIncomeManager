@@ -19,8 +19,9 @@ public class CreateMovementController {
         this.createMovementUseCase = createMovementUseCase;
     }
 
-    @PostMapping
-    public ResponseEntity<Movement> createMovement(@Valid @RequestBody CreateMovementRequest request) {
+    // NUEVO: Le decimos que consume multipart/form-data y usamos @ModelAttribute
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<Movement> createMovement(@Valid @ModelAttribute CreateMovementRequest request) {
         Movement savedMovement = createMovementUseCase.execute(request);
         return new ResponseEntity<>(savedMovement, HttpStatus.CREATED);
     }
