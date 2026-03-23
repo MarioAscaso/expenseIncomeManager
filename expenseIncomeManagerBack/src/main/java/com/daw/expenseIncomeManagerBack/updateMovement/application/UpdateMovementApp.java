@@ -3,11 +3,15 @@ package com.daw.expenseIncomeManagerBack.updateMovement.application;
 import com.daw.expenseIncomeManagerBack.shared.domain.Movement;
 import com.daw.expenseIncomeManagerBack.shared.domain.MovementRepository;
 import com.daw.expenseIncomeManagerBack.shared.domain.MovementTypeEnum;
+import com.daw.expenseIncomeManagerBack.shared.domain.RoleEnum;
 import com.daw.expenseIncomeManagerBack.shared.domain.User;
 import com.daw.expenseIncomeManagerBack.shared.domain.UserRepository;
 import com.daw.expenseIncomeManagerBack.updateMovement.domain.UpdateMovementUseCase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Service
 public class UpdateMovementApp implements UpdateMovementUseCase {
@@ -27,6 +31,21 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
                 .orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
 
         User user = movement.getUser();
+
+        // --- NUEVO: REGLAS DE SEGURIDAD EN EL BACKEND ---
+        // 1. Los Administradores pueden ver y borrar, pero no editar (según la lógica del frontend)
+        if (user.getRole() == RoleEnum.ADMIN) {
+            throw new RuntimeException("Los administradores no tienen permisos para editar movimientos.");
+        }
+
+        // 2. Los usuarios BASIC solo tienen 5 minutos para arrepentirse y editar
+        if (user.getRole() == RoleEnum.BASIC) {
+            long minutesPassed = Duration.between(movement.getCreatedAt(), LocalDateTime.now()).toMinutes();
+            if (minutesPassed > 5) {
+                throw new RuntimeException("Tiempo agotado. Por seguridad, no se puede modificar un movimiento pasados 5 minutos.");
+            }
+        }
+        // El SUPERADMIN no entra en estos if, por lo que tiene poder absoluto.
 
         // 1. REVERTIMOS EL SALDO ANTIGUO
         if (movement.getType() == MovementTypeEnum.INCOME) {

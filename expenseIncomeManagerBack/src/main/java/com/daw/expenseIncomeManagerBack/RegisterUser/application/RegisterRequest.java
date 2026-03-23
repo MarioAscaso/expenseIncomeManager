@@ -10,4 +10,10 @@ public class RegisterRequest {
 
     @NotBlank(message = "La contraseña no puede estar vacía")
     private String password;
+
+    @NotBlank(message = "El email no puede estar vacío")
+    private String email;
+
+    @NotBlank(message = "El teléfono no puede estar vacío")
+    private String phoneNumber;
 }

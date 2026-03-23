@@ -34,7 +34,9 @@ public class RegisterApp implements RegisterUseCase {
         User newUser = new User();
         newUser.setUsername(request.getUsername());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-        newUser.setRole(RoleEnum.BASIC); // Rol básico por defecto
+        newUser.setEmail(request.getEmail());
+        newUser.setPhoneNumber(request.getPhoneNumber());
+        newUser.setRole(RoleEnum.BASIC);
 
         // 3. Le creamos una cuenta asociada a 0€
         newUser.setAccount(new Account(null, BigDecimal.ZERO));

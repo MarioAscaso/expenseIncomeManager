@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 1. SEGURIDAD: COMPROBAR SESIÓN ---
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) {
-        // Si no hay usuario guardado en la memoria, redirigimos al login
         window.location.href = 'login.html';
         return; 
     }
@@ -14,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 2. LÓGICA DE LOGOUT ---
     document.getElementById('btnLogout').addEventListener('click', function() {
-        localStorage.removeItem('currentUser'); // Borramos la sesión
+        localStorage.removeItem('currentUser'); 
         window.location.href = 'login.html';
     });
 
@@ -41,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
         },
 
         eventClick: function(info) {
-            // Verificamos permisos básicos antes de abrir el modal
             if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.role === 'basic') {
                 prepareModalForEdition(info.event);
                 transactionModal.show();
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 5. CARGAR DATOS DEL BACKEND ---
     function loadTransactionsFromBackend() {
-        // Obtenemos los movimientos específicos del usuario logueado
         fetch(`http://localhost:9393/api/movements?userId=${currentUser.id}`)
             .then(response => response.json())
             .then(data => {
@@ -63,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadBalanceFromBackend() {
-        // Obtenemos el saldo actualizado de la cuenta del usuario
         fetch(`http://localhost:9393/api/users/${currentUser.id}/balance`)
             .then(response => response.json())
             .then(data => {
@@ -72,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error cargando saldo:', error));
     }
 
-    // Carga inicial de datos al entrar
     loadTransactionsFromBackend();
     loadBalanceFromBackend();
 
@@ -82,7 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
         balanceElement.innerText = amount.toFixed(2) + " €";
         
         balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
-        
         if (amount > 0) balanceElement.classList.add('text-success');
         else if (amount === 0) balanceElement.classList.add('text-warning');
         else balanceElement.classList.add('text-danger');
@@ -96,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category').value = 'EXPENSE';
         document.getElementById('file').value = '';
         
-        fileInputContainer.classList.remove('d-none'); // Permitir subida en nuevos
+        fileInputContainer.classList.remove('d-none');
         fileViewer.classList.add('d-none');
         
         transactionForm.dataset.date = date;
@@ -106,13 +100,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function prepareModalForEdition(event) {
-        document.getElementById('modalTitle').innerText = 'Detalles de Transacción';
         document.getElementById('transactionId').value = event.id;
         document.getElementById('description').value = event.extendedProps.description || event.title;
         document.getElementById('amount').value = event.extendedProps.amount;
         document.getElementById('category').value = event.extendedProps.type;
         
-        // Gestión de visualización de archivos adjuntos (Imagen o PDF)
         fileInputContainer.classList.add('d-none');
         if (event.extendedProps.attachedFileUrl) {
             fileViewer.classList.remove('d-none');
@@ -124,35 +116,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         transactionForm.dataset.date = event.startStr;
 
-        // --- LÓGICA DE RESTRICCIÓN DE 5 MINUTOS ---
         const now = new Date();
         const createdDate = new Date(event.start);
         const diffInMinutes = (now - createdDate) / 1000 / 60;
+        const remaining = Math.max(0, (5 - diffInMinutes)).toFixed(1); 
         const isExpired = diffInMinutes > 5;
 
-        // Permisos basados en Rol y Tiempo de creación
         if (currentUser.role === 'basic') {
             if (isExpired) {
-                // Pasados 5 minutos, el usuario BASIC no puede editar ni borrar
                 btnDelete.classList.add('d-none');
                 btnSave.classList.add('d-none');
                 toggleFormFields(true);
-                document.getElementById('modalTitle').innerText += ' (Solo lectura)';
+                document.getElementById('modalTitle').innerText = 'Consulta (Tiempo agotado)';
             } else {
                 btnDelete.classList.remove('d-none');
                 btnSave.classList.remove('d-none');
                 toggleFormFields(false);
+                document.getElementById('modalTitle').innerText = `Editar (Quedan ${remaining} min)`;
             }
         } else if (currentUser.role === 'admin') {
-            // El Admin puede borrar siempre, pero no editar
             btnDelete.classList.remove('d-none');
             btnSave.classList.add('d-none');
             toggleFormFields(true);
+            document.getElementById('modalTitle').innerText = 'Consulta de Transacción';
         } else if (currentUser.role === 'superadmin') {
-            // El Superadmin tiene control total sin restricciones de tiempo
             btnDelete.classList.remove('d-none');
             btnSave.classList.remove('d-none');
             toggleFormFields(false);
+            document.getElementById('modalTitle').innerText = 'Editar Transacción';
         }
     }
 
@@ -162,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category').disabled = disabled;
     }
 
-    // --- 7. ENVÍO DEL FORMULARIO (CREAR / ACTUALIZAR) ---
+    // --- 7. ENVÍO DEL FORMULARIO DE MOVIMIENTOS ---
     transactionForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -172,9 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const category = document.getElementById('category').value;
         
         if (id) {
-            // LÓGICA DE ACTUALIZACIÓN (Solo para perfiles con permiso)
             const requestBody = { description, amount: parseFloat(amount), type: category };
-
             fetch(`http://localhost:9393/api/movements/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -191,22 +180,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadBalanceFromBackend();
             })
             .catch(error => showNotification('Error actualizando', 'danger'));
-
         } else {
-            // LÓGICA DE CREACIÓN (Uso de FormData para soportar archivos)
             const fileInput = document.getElementById('file').files[0];
             const formData = new FormData();
             formData.append('description', description);
             formData.append('amount', amount);
             formData.append('type', category);
             formData.append('userId', currentUser.id);
-            if (fileInput) {
-                formData.append('file', fileInput);
-            }
+            if (fileInput) formData.append('file', fileInput);
 
             fetch('http://localhost:9393/api/movements', {
                 method: 'POST',
-                // El navegador gestiona el Content-Type automáticamente al usar FormData
                 body: formData
             })
             .then(response => {
@@ -223,7 +207,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- 8. LÓGICA DE ELIMINACIÓN ---
+    // --- 8. LÓGICA DE TRANSFERENCIAS (NUEVO) ---
+    document.getElementById('transferForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const payload = {
+            originUserId: currentUser.id,
+            targetUsername: document.getElementById('targetUser').value,
+            amount: parseFloat(document.getElementById('transferAmount').value),
+            description: document.getElementById('transferConcept').value
+        };
+
+        fetch('http://localhost:9393/api/transfers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(async response => {
+            if(response.ok) {
+                showNotification('Transferencia enviada con éxito', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+                // Limpiamos el formulario
+                document.getElementById('transferForm').reset();
+                loadTransactionsFromBackend();
+                loadBalanceFromBackend();
+            } else {
+                const err = await response.text();
+                throw new Error(err);
+            }
+        })
+        .catch(error => showNotification(error.message, 'danger'));
+    });
+
+    // --- 9. LÓGICA DE ELIMINACIÓN ---
     btnDelete.addEventListener('click', function() {
         const id = document.getElementById('transactionId').value;
         if (id) {
@@ -240,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- 9. NOTIFICACIONES ---
+    // --- 10. NOTIFICACIONES ---
     function showNotification(message, type) {
         const notificationArea = document.getElementById('notificationArea');
         const notificationMessage = document.getElementById('notificationMessage');

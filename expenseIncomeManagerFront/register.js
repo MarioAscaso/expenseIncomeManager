@@ -17,17 +17,22 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const userValue = document.getElementById('registerUsername').value;
         const passValue = document.getElementById('registerPassword').value;
+        const emailValue = document.getElementById('registerEmail').value;
+        const phoneValue = document.getElementById('registerPhone').value;
 
         fetch('http://localhost:9393/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: userValue, password: passValue })
+            body: JSON.stringify({ 
+                username: userValue, 
+                password: passValue,
+                email: emailValue,
+                phoneNumber: phoneValue
+            })
         })
         .then(async response => {
             if (response.ok) {
-                // Guardamos un mensaje temporal para leerlo en el login.js
                 sessionStorage.setItem('registerSuccess', '¡Cuenta creada con éxito! Ya puedes iniciar sesión.');
-                // Redirigimos al login
                 window.location.href = 'login.html';
             } else {
                 const errorText = await response.text();
@@ -36,4 +41,4 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => showAlert(error.message, 'danger'));
     });
-});
+}); 

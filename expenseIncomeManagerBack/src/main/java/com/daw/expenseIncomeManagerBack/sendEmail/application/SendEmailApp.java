@@ -1,25 +1,30 @@
 package com.daw.expenseIncomeManagerBack.sendEmail.application;
 
+import com.daw.expenseIncomeManagerBack.sendEmail.domain.EmailSenderPort;
 import com.daw.expenseIncomeManagerBack.sendEmail.domain.SendEmailUseCase;
-import com.daw.expenseIncomeManagerBack.shared.infrastructure.service.EmailService;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class SendEmailApp implements SendEmailUseCase {
 
-    private final EmailService emailService;
+    // Dependemos de la interfaz (Domain), no de la implementación (Infrastructure)
+    private final EmailSenderPort emailSenderPort;
 
-    public SendEmailApp(EmailService emailService) {
-        this.emailService = emailService;
+    public SendEmailApp(EmailSenderPort emailSenderPort) {
+        this.emailSenderPort = emailSenderPort;
     }
 
     @Override
-    public void sendMovementNotification(String email, String type, java.math.BigDecimal amount, String description) {
+    public void sendMovementNotification(String email, String type, BigDecimal amount, String description) {
         String subject = "Alerta de Movimiento: " + type;
         String body = String.format(
                 "Se ha registrado un nuevo movimiento en su cuenta.\n\nTipo: %s\nImporte: %s€\nDescripción: %s",
                 type, amount, description
         );
-        emailService.sendEmail(email, subject, body);
+
+        // Usamos el puerto para enviar el correo
+        emailSenderPort.send(email, subject, body);
     }
 }
