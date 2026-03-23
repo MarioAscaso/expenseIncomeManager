@@ -1,16 +1,14 @@
 package com.daw.expenseIncomeManagerBack.deleteMovement.application;
 
 import com.daw.expenseIncomeManagerBack.deleteMovement.domain.DeleteMovementUseCase;
-import com.daw.expenseIncomeManagerBack.shared.domain.Movement;
-import com.daw.expenseIncomeManagerBack.shared.domain.MovementRepository;
-import com.daw.expenseIncomeManagerBack.shared.domain.User;
-import com.daw.expenseIncomeManagerBack.shared.domain.UserRepository;
+import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.io.File;
+import java.nio.file.Paths;
 
 @Service
 public class DeleteMovementApp implements DeleteMovementUseCase {
-
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
 
@@ -20,24 +18,24 @@ public class DeleteMovementApp implements DeleteMovementUseCase {
     }
 
     @Override
-    @Transactional // Importante: Si falla el borrado, no se guarda el cambio de saldo
-    public void execute(Long movementId) {
-        // 1. Buscamos el movimiento
-        Movement movement = movementRepository.findById(movementId)
-                .orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
+    @Transactional
+    public void execute(Long id) {
+        Movement m = movementRepository.findById(id).orElseThrow();
 
-        // 2. Obtenemos al usuario dueño del movimiento
-        User user = movement.getUser();
-
-        // 3. Revertimos el saldo en la cuenta del usuario
-        if (movement.getType().name().equals("INCOME")) {
-            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount())); // Si era ingreso, restamos
-        } else {
-            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount())); // Si era gasto, sumamos
+        // Borrado físico del archivo
+        if (m.getAttachedFileUrl() != null) {
+            try {
+                String name = m.getAttachedFileUrl().substring(m.getAttachedFileUrl().lastIndexOf("/") + 1);
+                File f = Paths.get("uploads/" + name).toFile();
+                if (f.exists()) f.delete();
+            } catch (Exception e) { System.err.println("Error borrando físico"); }
         }
-        userRepository.save(user);
 
-        // 4. Borramos el movimiento definitivamente
-        movementRepository.delete(movement);
+        User u = m.getUser();
+        if (m.getType() == MovementTypeEnum.INCOME) u.getAccount().setBalance(u.getAccount().getBalance().subtract(m.getAmount()));
+        else u.getAccount().setBalance(u.getAccount().getBalance().add(m.getAmount()));
+
+        userRepository.save(u);
+        movementRepository.delete(m);
     }
 }

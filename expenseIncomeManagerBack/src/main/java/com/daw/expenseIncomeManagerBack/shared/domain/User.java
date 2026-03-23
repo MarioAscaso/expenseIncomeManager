@@ -22,12 +22,16 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true) // Añadido para notificaciones
+    private String email;
+
+    @Column(unique = true) // Añadido para futuro Bizum
+    private String phoneNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoleEnum role;
 
-    // NUEVO: Relación 1 a 1 con la cuenta. CascadeType.ALL hace que si guardas
-    // un User, se guarde automáticamente su Account asociada.
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id", referencedColumnName = "id")
     private Account account;
