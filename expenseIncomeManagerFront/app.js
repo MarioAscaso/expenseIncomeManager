@@ -9,23 +9,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const roleSelector = document.getElementById('roleSelector');
     
     // 2. State Management
-    let currentUser = { role: 'basic', id: 1 }; // Default role
-    let transactions = [];
+    // Forzamos el ID 3 (que según tu DataInitializer es el basicUser)
+    let currentUser = { role: 'basic', id: 3 }; 
     let currentBalance = 0;
 
     // Change role for testing dynamically
     roleSelector.addEventListener('change', (e) => {
         currentUser.role = e.target.value;
+        // Dependiendo del rol, simulamos usar un usuario u otro de los que creaste
+        if(currentUser.role === 'basic') currentUser.id = 3;
+        if(currentUser.role === 'admin') currentUser.id = 2;
+        if(currentUser.role === 'superadmin') currentUser.id = 1;
+        
         showNotification(`Role changed to ${currentUser.role.toUpperCase()}`, 'info');
+        // Recargar el calendario y el saldo al cambiar de rol
+        loadTransactionsFromBackend(); 
+        loadBalanceFromBackend();
     });
 
     // 3. FullCalendar Initialization
     const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
-        locale: 'en',
-        events: transactions,
+        locale: 'es', // Calendario en español
+        events: [], // Inicialmente vacío, los cargaremos de la BD
         
-        // When clicking a day: Create transaction (All roles can create)
+        // When clicking a day: Create transaction
         dateClick: function(info) {
             prepareModalForCreation(info.dateStr);
             transactionModal.show();
@@ -44,19 +52,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     calendar.render();
 
-    // 4. Interface Functions
-    function recalculateBalance() {
-        currentBalance = transactions.reduce((total, transaction) => {
-            const amount = parseFloat(transaction.extendedProps.amount);
-            return transaction.extendedProps.category === 'INCOME' ? total + amount : total - amount;
-        }, 0);
-        
-        updateBalanceColor(currentBalance);
+    // Función para cargar los eventos del backend
+    function loadTransactionsFromBackend() {
+        fetch(`http://localhost:9393/api/movements?userId=${currentUser.id}`)
+            .then(response => response.json())
+            .then(data => {
+                calendar.removeAllEvents();
+                calendar.addEventSource(data);
+            })
+            .catch(error => console.error('Error cargando movimientos:', error));
     }
 
+    // Función para pedir el saldo actual del usuario
+    function loadBalanceFromBackend() {
+        fetch(`http://localhost:9393/api/users/${currentUser.id}/balance`)
+            .then(response => response.json())
+            .then(data => {
+                updateBalanceColor(data.balance);
+            })
+            .catch(error => console.error('Error cargando saldo:', error));
+    }
+
+    // Cargamos los datos (movimientos y saldo) por primera vez al abrir la página
+    loadTransactionsFromBackend();
+    loadBalanceFromBackend();
+
+    // 4. Interface Functions
     function updateBalanceColor(amount) {
         const balanceElement = document.getElementById('balanceValue');
-        balanceElement.innerText = amount.toFixed(2);
+        balanceElement.innerText = amount.toFixed(2) + " €";
         
         balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
         
@@ -86,9 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function prepareModalForEdition(event) {
         document.getElementById('modalTitle').innerText = 'Transaction Details';
         document.getElementById('transactionId').value = event.id;
-        document.getElementById('description').value = event.title;
+        document.getElementById('description').value = event.extendedProps.description || event.title;
         document.getElementById('amount').value = event.extendedProps.amount;
-        document.getElementById('category').value = event.extendedProps.category;
+        document.getElementById('category').value = event.extendedProps.type; // En el backend lo llamas "type"
         
         transactionForm.dataset.date = event.startStr;
         
@@ -122,43 +146,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const category = document.getElementById('category').value;
         const date = transactionForm.dataset.date;
 
-        const newTransaction = {
-            id: id ? id : Date.now().toString(), // Simulated ID, backend will provide this later
-            title: description,
-            start: date,
-            color: category === 'INCOME' ? '#28a745' : '#dc3545',
-            extendedProps: { amount: amount, category: category }
-        };
-
         if (id) {
-            // Update logic (Superadmin only)
-            const existingEvent = calendar.getEventById(id);
-            if (existingEvent) existingEvent.remove();
-            transactions = transactions.filter(t => t.id !== id);
-            showNotification('Transaction updated successfully', 'success');
+            // Lógica de UPDATE (Superadmin) -> Lo haremos en el Paso 4
+            showNotification('Update no implementado aún en backend', 'warning');
+            transactionModal.hide();
         } else {
-            showNotification('Transaction created successfully', 'success');
-        }
+            // Lógica de CREATE -> Enviamos al Backend
+            const requestBody = {
+                description: description,
+                amount: parseFloat(amount),
+                type: category,
+                userId: currentUser.id
+            };
 
-        // Add to calendar and state
-        calendar.addEvent(newTransaction);
-        transactions.push(newTransaction);
-        
-        recalculateBalance();
-        transactionModal.hide();
+            fetch('http://localhost:9393/api/movements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => {
+                if(response.ok) return response.json();
+                throw new Error("Error al guardar");
+            })
+            .then(savedMovement => {
+                showNotification('Transaction created successfully', 'success');
+                transactionModal.hide();
+                // Recargamos los eventos del calendario y el saldo
+                loadTransactionsFromBackend();
+                loadBalanceFromBackend();
+            })
+            .catch(error => {
+                console.error(error);
+                showNotification('Error guardando en el servidor', 'danger');
+            });
+        }
     });
 
     // 7. Delete Logic (Admin & Superadmin)
     btnDelete.addEventListener('click', function() {
         const id = document.getElementById('transactionId').value;
         if (id) {
-            const existingEvent = calendar.getEventById(id);
-            if (existingEvent) existingEvent.remove();
-            transactions = transactions.filter(t => t.id !== id);
-            
-            recalculateBalance();
-            transactionModal.hide();
-            showNotification('Transaction deleted successfully by Admin', 'info');
+            // Hacemos la petición DELETE al backend
+            fetch(`http://localhost:9393/api/movements/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if(response.ok) {
+                    showNotification('Movimiento eliminado correctamente', 'success');
+                    transactionModal.hide();
+                    // Como el backend ha actualizado el saldo, recargamos las dos cosas
+                    loadTransactionsFromBackend();
+                    loadBalanceFromBackend();
+                } else {
+                    throw new Error("Error al eliminar");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                showNotification('Error eliminando en el servidor', 'danger');
+            });
         }
     });
 
