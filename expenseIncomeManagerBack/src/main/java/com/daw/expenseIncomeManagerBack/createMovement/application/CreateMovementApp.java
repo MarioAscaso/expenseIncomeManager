@@ -6,22 +6,19 @@ import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
-
 @Service
 public class CreateMovementApp implements CreateMovementUseCase {
 
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
     private final SendEmailUseCase sendEmailUseCase;
+    private final FileStoragePort fileStoragePort;
 
-    public CreateMovementApp(MovementRepository movementRepository, UserRepository userRepository, SendEmailUseCase sendEmailUseCase) {
+    public CreateMovementApp(MovementRepository movementRepository, UserRepository userRepository, SendEmailUseCase sendEmailUseCase, FileStoragePort fileStoragePort) {
         this.movementRepository = movementRepository;
         this.userRepository = userRepository;
         this.sendEmailUseCase = sendEmailUseCase;
+        this.fileStoragePort = fileStoragePort;
     }
 
     @Override
@@ -36,32 +33,21 @@ public class CreateMovementApp implements CreateMovementUseCase {
         movement.setUser(user);
 
         if (request.getFile() != null && !request.getFile().isEmpty()) {
-            try {
-                String fileName = UUID.randomUUID().toString() + "_" + request.getFile().getOriginalFilename();
-                Path path = Paths.get("uploads/" + fileName);
-                Files.createDirectories(path.getParent());
-                Files.write(path, request.getFile().getBytes());
-                movement.setAttachedFileUrl("http://localhost:9393/uploads/" + fileName);
-            } catch (Exception e) {
-                throw new RuntimeException("Error al guardar el archivo.");
-            }
+            String fileUrl = fileStoragePort.saveFile(request.getFile());
+            movement.setAttachedFileUrl(fileUrl);
         }
 
-        if (request.getType().name().equals("INCOME")) {
+        if (request.getType() == MovementTypeEnum.INCOME) {
             user.getAccount().setBalance(user.getAccount().getBalance().add(request.getAmount()));
         } else {
             user.getAccount().setBalance(user.getAccount().getBalance().subtract(request.getAmount()));
         }
+
         userRepository.save(user);
         Movement savedMovement = movementRepository.save(movement);
 
         if (user.getEmail() != null && user.getNotificationsEnabled()) {
-            sendEmailUseCase.sendMovementNotification(
-                    user.getEmail(),
-                    savedMovement.getType().name(),
-                    savedMovement.getAmount(),
-                    savedMovement.getDescription()
-            );
+            sendEmailUseCase.sendMovementNotification(user.getEmail(), savedMovement.getType().name(), savedMovement.getAmount(), savedMovement.getDescription());
         }
 
         return savedMovement;

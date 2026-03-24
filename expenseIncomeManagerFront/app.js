@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     
+    // --- CONFIGURACIÓN GLOBAL ---
+    const API_BASE_URL = 'http://localhost:9393/api';
+    
     // --- 1. SEGURIDAD: COMPROBAR SESIÓN ---
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) {
@@ -11,20 +14,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('loggedUserName').innerText = currentUser.username;
     document.getElementById('loggedUserRole').innerText = currentUser.role;
 
-    // --- 2. LÓGICA DE LOGOUT ---
+    // --- 2. LOGOUT ---
     document.getElementById('btnLogout').addEventListener('click', function() {
         localStorage.removeItem('currentUser'); 
         window.location.href = 'login.html';
     });
 
-    // --- 3. LÓGICA CAMPANITA DE NOTIFICACIONES ---
+    // --- 3. CAMPANITA DE NOTIFICACIONES ---
     const btnToggle = document.getElementById('btnToggleNotifications');
     const statusText = document.getElementById('notificationStatus');
 
     btnToggle.addEventListener('click', function() {
-        fetch(`http://localhost:9393/api/users/${currentUser.id}/toggle-notifications`, {
-            method: 'PUT'
-        })
+        fetch(`${API_BASE_URL}/users/${currentUser.id}/toggle-notifications`, { method: 'PUT' })
         .then(res => res.json())
         .then(isEnabled => {
             if(isEnabled) {
@@ -37,10 +38,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 showNotification('Notificaciones de correo DESACTIVADAS', 'info');
             }
         })
-        .catch(err => showNotification('Error al cambiar notificaciones', 'error'));
+        .catch(() => showNotification('Error al cambiar notificaciones', 'error'));
     });
 
-    // --- 4. ELEMENTOS DEL DOM ---
+    // --- 4. DOM ELEMENTS ---
     const calendarElement = document.getElementById('calendar');
     const transactionModalElement = document.getElementById('transactionModal');
     const transactionModal = new bootstrap.Modal(transactionModalElement);
@@ -56,14 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
         initialView: 'dayGridMonth',
         locale: 'es',
         events: [],
-        
-        dateClick: function(info) {
+        dateClick: (info) => {
             prepareModalForCreation(info.dateStr);
             transactionModal.show();
         },
-
-        eventClick: function(info) {
-            if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.role === 'basic') {
+        eventClick: (info) => {
+            if (['admin', 'superadmin', 'basic'].includes(currentUser.role)) {
                 prepareModalForEdition(info.event);
                 transactionModal.show();
             }
@@ -71,20 +70,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     calendar.render();
 
-    // --- 6. CARGAR DATOS DEL BACKEND ---
+    // --- 6. FUNCIONES DE CARGA CENTRALIZADAS ---
     function loadTransactionsFromBackend() {
-        fetch(`http://localhost:9393/api/movements?userId=${currentUser.id}`)
-            .then(response => response.json())
+        fetch(`${API_BASE_URL}/movements?userId=${currentUser.id}`)
+            .then(res => res.json())
             .then(data => {
                 calendar.removeAllEvents();
                 calendar.addEventSource(data);
             })
-            .catch(error => console.error('Error cargando movimientos:', error));
+            .catch(err => console.error('Error cargando movimientos:', err));
     }
 
     function loadBalanceFromBackend() {
-        fetch(`http://localhost:9393/api/users/${currentUser.id}/balance`)
-            .then(response => response.json())
+        fetch(`${API_BASE_URL}/users/${currentUser.id}/balance`)
+            .then(res => res.json())
             .then(data => {
                 const balanceElement = document.getElementById('balanceValue');
                 balanceElement.innerText = data.balance.toFixed(2) + " €";
@@ -93,13 +92,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (data.balance === 0) balanceElement.classList.add('text-warning');
                 else balanceElement.classList.add('text-danger');
             })
-            .catch(error => console.error('Error cargando saldo:', error));
+            .catch(err => console.error('Error cargando saldo:', err));
     }
 
-    loadTransactionsFromBackend();
-    loadBalanceFromBackend();
+    function refreshDashboard() {
+        loadTransactionsFromBackend();
+        loadBalanceFromBackend();
+    }
 
-    // --- 7. FUNCIONES DE INTERFAZ Y MODAL ---
+    refreshDashboard(); // Carga inicial
+
+    // --- 7. MODAL UI HELPERS ---
     function prepareModalForCreation(date) {
         document.getElementById('modalTitle').innerText = 'Nueva Transacción';
         document.getElementById('transactionId').value = '';
@@ -110,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         fileInputContainer.classList.remove('d-none');
         fileViewer.classList.add('d-none');
-        
         transactionForm.dataset.date = date;
         btnDelete.classList.add('d-none');
         btnSave.classList.remove('d-none');
@@ -133,10 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         transactionForm.dataset.date = event.startStr;
-
-        const now = new Date();
-        const createdDate = new Date(event.start);
-        const diffInMinutes = (now - createdDate) / 1000 / 60;
+        const diffInMinutes = (new Date() - new Date(event.start)) / 1000 / 60;
         const remaining = Math.max(0, (5 - diffInMinutes)).toFixed(1); 
         const isExpired = diffInMinutes > 5;
 
@@ -173,145 +172,103 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category').disabled = disabled;
     }
 
-    // --- 8. GUARDAR O ACTUALIZAR MOVIMIENTO ---
+    function handleApiResponse(response) {
+        if (response.ok) return response.json().catch(() => ({})); 
+        return response.json().then(err => { throw new Error(err.error || "Error en la petición") });
+    }
+
+    // --- 8. CRUD MOVIMIENTOS ---
     transactionForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const id = document.getElementById('transactionId').value;
-        const description = document.getElementById('description').value;
-        const amount = document.getElementById('amount').value;
-        const category = document.getElementById('category').value;
-        const fileInput = document.getElementById('file').files[0];
-        
         const formData = new FormData();
-        formData.append('description', description);
-        formData.append('amount', amount);
-        formData.append('type', category);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('amount', document.getElementById('amount').value);
+        formData.append('type', document.getElementById('category').value);
+        
+        const fileInput = document.getElementById('file').files[0];
         if (fileInput) formData.append('file', fileInput);
 
         if (id) {
-            // ACTUALIZAR (PUT)
-            fetch(`http://localhost:9393/api/movements/${id}`, {
-                method: 'PUT',
-                body: formData
-            })
-            .then(async response => {
-                if(response.ok) return response.json();
-                const err = await response.json();
-                throw new Error(err.error || "Error al actualizar");
-            })
+            fetch(`${API_BASE_URL}/movements/${id}`, { method: 'PUT', body: formData })
+            .then(handleApiResponse)
             .then(() => {
                 showNotification('Movimiento actualizado correctamente', 'success');
                 transactionModal.hide();
-                loadTransactionsFromBackend();
-                loadBalanceFromBackend();
+                refreshDashboard();
             })
-            .catch(error => showNotification(error.message, 'error'));
+            .catch(err => showNotification(err.message, 'error'));
         } else {
-            // CREAR (POST)
             formData.append('userId', currentUser.id);
-            fetch('http://localhost:9393/api/movements', {
-                method: 'POST',
-                body: formData
-            })
-            .then(async response => {
-                if(response.ok) return response.json();
-                const err = await response.json();
-                throw new Error(err.error || "Error al guardar");
-            })
+            fetch(`${API_BASE_URL}/movements`, { method: 'POST', body: formData })
+            .then(handleApiResponse)
             .then(() => {
                 showNotification('Transacción creada correctamente', 'success');
                 transactionModal.hide();
-                loadTransactionsFromBackend();
-                loadBalanceFromBackend();
+                refreshDashboard();
             })
-            .catch(error => showNotification(error.message, 'error'));
+            .catch(err => showNotification(err.message, 'error'));
         }
     });
 
-    // --- 9. LÓGICA DE TRANSFERENCIAS CLÁSICAS ---
+    btnDelete.addEventListener('click', function() {
+        const id = document.getElementById('transactionId').value;
+        if (id) {
+            fetch(`${API_BASE_URL}/movements/${id}`, { method: 'DELETE' })
+            .then(handleApiResponse)
+            .then(() => {
+                showNotification('Movimiento eliminado', 'success');
+                transactionModal.hide();
+                refreshDashboard();
+            })
+            .catch(err => showNotification(err.message, 'error'));
+        }
+    });
+
+    // --- 9. TRANSFERENCIAS Y BIZUM ---
+    function executeMoneyTransfer(endpoint, payload, modalId, formId, successMsg) {
+        fetch(`${API_BASE_URL}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (response.ok) return response; // Si es ok, no intentamos parsear por si es texto vacío
+            return response.json().then(err => { throw new Error(err.error || "Error en el envío") });
+        })
+        .then(() => {
+            showNotification(successMsg, 'success');
+            bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
+            document.getElementById(formId).reset();
+            refreshDashboard();
+        })
+        .catch(err => showNotification(err.message, 'error'));
+    }
+
     document.getElementById('transferForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const payload = {
             originUserId: currentUser.id,
             targetUsername: document.getElementById('targetUser').value,
             amount: parseFloat(document.getElementById('transferAmount').value),
             description: document.getElementById('transferConcept').value
         };
-
-        fetch('http://localhost:9393/api/transfers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(async response => {
-            if(response.ok) {
-                showNotification('Transferencia enviada con éxito', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
-                document.getElementById('transferForm').reset();
-                loadTransactionsFromBackend();
-                loadBalanceFromBackend();
-            } else {
-                const err = await response.text(); // <-- OJO, esta API devuelve texto (String)
-                throw new Error(err);
-            }
-        })
-        .catch(error => showNotification(error.message, 'error'));
+        executeMoneyTransfer('transfers', payload, 'transferModal', 'transferForm', 'Transferencia enviada con éxito');
     });
 
-    // --- 10. LÓGICA DEL BIZUM (NUEVO) ---
     document.getElementById('bizumForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const payload = {
             originUserId: currentUser.id,
             targetPhoneNumber: document.getElementById('bizumPhone').value,
             amount: parseFloat(document.getElementById('bizumAmount').value),
             description: document.getElementById('bizumConcept').value
         };
-
-        fetch('http://localhost:9393/api/bizum', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(async response => {
-            if(response.ok) {
-                showNotification('Bizum enviado al instante', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('bizumModal')).hide();
-                document.getElementById('bizumForm').reset();
-                loadTransactionsFromBackend();
-                loadBalanceFromBackend();
-            } else {
-                const err = await response.json(); // <-- Gracias al manejador global
-                throw new Error(err.error || "Error al enviar el Bizum");
-            }
-        })
-        .catch(error => showNotification(error.message, 'error'));
+        executeMoneyTransfer('bizum', payload, 'bizumModal', 'bizumForm', 'Bizum enviado al instante');
     });
 
-    // --- 11. BORRAR ---
-    btnDelete.addEventListener('click', function() {
-        const id = document.getElementById('transactionId').value;
-        if (id) {
-            fetch(`http://localhost:9393/api/movements/${id}`, { method: 'DELETE' })
-            .then(async response => {
-                if(response.ok) {
-                    showNotification('Movimiento eliminado', 'success');
-                    transactionModal.hide();
-                    loadTransactionsFromBackend();
-                    loadBalanceFromBackend();
-                } else { 
-                    const err = await response.json();
-                    throw new Error(err.error || "Error al eliminar"); 
-                }
-            })
-            .catch(error => showNotification(error.message, 'error'));
-        }
-    });
-
-    // --- 12. SWEETALERT2 ---
+    // --- 10. NOTIFICACIONES UI ---
     function showNotification(message, type) {
         Swal.fire({
             title: type === 'success' ? '¡Éxito!' : (type === 'error' ? 'Error' : 'Aviso'),

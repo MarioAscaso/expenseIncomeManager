@@ -1,11 +1,6 @@
 package com.daw.expenseIncomeManagerBack.updateMovement.application;
 
-import com.daw.expenseIncomeManagerBack.shared.domain.Movement;
-import com.daw.expenseIncomeManagerBack.shared.domain.MovementRepository;
-import com.daw.expenseIncomeManagerBack.shared.domain.MovementTypeEnum;
-import com.daw.expenseIncomeManagerBack.shared.domain.RoleEnum;
-import com.daw.expenseIncomeManagerBack.shared.domain.User;
-import com.daw.expenseIncomeManagerBack.shared.domain.UserRepository;
+import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import com.daw.expenseIncomeManagerBack.updateMovement.domain.UpdateMovementUseCase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,19 +11,22 @@ import java.time.LocalDateTime;
 @Service
 public class UpdateMovementApp implements UpdateMovementUseCase {
 
+    private static final int MAX_EDIT_MINUTES = 5;
+
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
+    private final FileStoragePort fileStoragePort; 
 
-    public UpdateMovementApp(MovementRepository movementRepository, UserRepository userRepository) {
+    public UpdateMovementApp(MovementRepository movementRepository, UserRepository userRepository, FileStoragePort fileStoragePort) {
         this.movementRepository = movementRepository;
         this.userRepository = userRepository;
+        this.fileStoragePort = fileStoragePort;
     }
 
     @Override
     @Transactional
     public Movement execute(Long id, UpdateMovementRequest request) {
         Movement movement = movementRepository.findById(id).orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
-
         User user = movement.getUser();
 
         if (user.getRole() == RoleEnum.ADMIN) {
@@ -37,8 +35,8 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
 
         if (user.getRole() == RoleEnum.BASIC) {
             long minutesPassed = Duration.between(movement.getCreatedAt(), LocalDateTime.now()).toMinutes();
-            if (minutesPassed > 5) {
-                throw new RuntimeException("Tiempo agotado. Por seguridad, no se puede modificar un movimiento pasados 5 minutos.");
+            if (minutesPassed > MAX_EDIT_MINUTES) {
+                throw new RuntimeException("Tiempo agotado. Solo se puede modificar un movimiento durante los primeros " + MAX_EDIT_MINUTES + " minutos.");
             }
         }
 
@@ -59,21 +57,9 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
         }
 
         if (request.getFile() != null && !request.getFile().isEmpty()) {
-            try {
-                if (movement.getAttachedFileUrl() != null) {
-                    String oldFileName = movement.getAttachedFileUrl().substring(movement.getAttachedFileUrl().lastIndexOf("/") + 1);
-                    java.nio.file.Paths.get("uploads/" + oldFileName).toFile().delete();
-                }
-
-                String newFileName = java.util.UUID.randomUUID().toString() + "_" + request.getFile().getOriginalFilename();
-                java.nio.file.Path path = java.nio.file.Paths.get("uploads/" + newFileName);
-                java.nio.file.Files.createDirectories(path.getParent());
-                java.nio.file.Files.write(path, request.getFile().getBytes());
-
-                movement.setAttachedFileUrl("http://localhost:9393/uploads/" + newFileName);
-            } catch (Exception e) {
-                throw new RuntimeException("Error al actualizar el archivo.");
-            }
+            fileStoragePort.deleteFile(movement.getAttachedFileUrl());
+            String newFileUrl = fileStoragePort.saveFile(request.getFile());
+            movement.setAttachedFileUrl(newFileUrl);
         }
 
         userRepository.save(user);
