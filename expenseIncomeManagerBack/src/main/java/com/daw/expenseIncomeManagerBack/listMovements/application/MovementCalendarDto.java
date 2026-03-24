@@ -9,13 +9,12 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MovementCalendarDto {
-    private String id;              // ID del evento (FullCalendar prefiere strings aquí)
-    private String title;           // Lo que se verá en el calendario (Ej: "Mercadona (-50€)")
-    private String start;           // Fecha en formato ISO (Ej: "2024-05-15T10:30:00")
-    private String backgroundColor; // Color de fondo (Verde para ingresos, Rojo para gastos)
-    private String borderColor;     // Color del borde
+    private String id;
+    private String title;
+    private String start;
+    private String backgroundColor;
+    private String borderColor;
 
-    // Propiedades extra que FullCalendar guardará por si las necesitamos al hacer clic
     private String description;
     private BigDecimal amount;
     private String type;

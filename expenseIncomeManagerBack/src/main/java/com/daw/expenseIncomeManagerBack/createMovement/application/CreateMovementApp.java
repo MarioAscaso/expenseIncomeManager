@@ -1,29 +1,33 @@
 package com.daw.expenseIncomeManagerBack.createMovement.application;
 
 import com.daw.expenseIncomeManagerBack.createMovement.domain.CreateMovementUseCase;
-import com.daw.expenseIncomeManagerBack.sendEmail.domain.SendEmailUseCase; // <-- IMPORTANTE
+import com.daw.expenseIncomeManagerBack.sendEmail.domain.SendEmailUseCase;
 import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Service
 public class CreateMovementApp implements CreateMovementUseCase {
 
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
-    private final SendEmailUseCase sendEmailUseCase; // <-- NUEVO
+    private final SendEmailUseCase sendEmailUseCase;
 
     public CreateMovementApp(MovementRepository movementRepository, UserRepository userRepository, SendEmailUseCase sendEmailUseCase) {
         this.movementRepository = movementRepository;
         this.userRepository = userRepository;
-        this.sendEmailUseCase = sendEmailUseCase; // <-- NUEVO
+        this.sendEmailUseCase = sendEmailUseCase;
     }
 
     @Override
     @Transactional
     public Movement execute(CreateMovementRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        User user = userRepository.findById(request.getUserId()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         Movement movement = new Movement();
         movement.setDescription(request.getDescription());
@@ -31,7 +35,17 @@ public class CreateMovementApp implements CreateMovementUseCase {
         movement.setType(request.getType());
         movement.setUser(user);
 
-        // ... (Tu lógica de archivo se queda IGUAL) ...
+        if (request.getFile() != null && !request.getFile().isEmpty()) {
+            try {
+                String fileName = UUID.randomUUID().toString() + "_" + request.getFile().getOriginalFilename();
+                Path path = Paths.get("uploads/" + fileName);
+                Files.createDirectories(path.getParent());
+                Files.write(path, request.getFile().getBytes());
+                movement.setAttachedFileUrl("http://localhost:9393/uploads/" + fileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al guardar el archivo.");
+            }
+        }
 
         if (request.getType().name().equals("INCOME")) {
             user.getAccount().setBalance(user.getAccount().getBalance().add(request.getAmount()));
@@ -41,8 +55,7 @@ public class CreateMovementApp implements CreateMovementUseCase {
         userRepository.save(user);
         Movement savedMovement = movementRepository.save(movement);
 
-        // --- NUEVO: DISPARAMOS EL EMAIL ---
-        if (user.getEmail() != null) {
+        if (user.getEmail() != null && user.getNotificationsEnabled()) {
             sendEmailUseCase.sendMovementNotification(
                     user.getEmail(),
                     savedMovement.getType().name(),

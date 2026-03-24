@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.sendEmail.infrastructure;
+package com.daw.expenseIncomeManagerBack.sendEmail.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.sendEmail.domain.EmailSenderPort;
 import org.springframework.beans.factory.annotation.Autowired;

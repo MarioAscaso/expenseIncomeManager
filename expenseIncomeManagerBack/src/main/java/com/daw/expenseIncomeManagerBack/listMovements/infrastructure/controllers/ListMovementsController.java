@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.listMovements.infrastructure;
+package com.daw.expenseIncomeManagerBack.listMovements.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.listMovements.application.MovementCalendarDto;
 import com.daw.expenseIncomeManagerBack.listMovements.domain.ListMovementsUseCase;
@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/movements")
-@CrossOrigin(origins = "*") // Permitimos peticiones desde nuestro Frontend
+@CrossOrigin(origins = "*")
 public class ListMovementsController {
 
     private final ListMovementsUseCase listMovementsUseCase;
@@ -18,7 +18,6 @@ public class ListMovementsController {
         this.listMovementsUseCase = listMovementsUseCase;
     }
 
-    // Usamos @GetMapping y esperamos el userId por parámetro de la URL (Query Param)
     @GetMapping
     public ResponseEntity<List<MovementCalendarDto>> listMovements(@RequestParam Long userId) {
         List<MovementCalendarDto> movements = listMovementsUseCase.execute(userId);

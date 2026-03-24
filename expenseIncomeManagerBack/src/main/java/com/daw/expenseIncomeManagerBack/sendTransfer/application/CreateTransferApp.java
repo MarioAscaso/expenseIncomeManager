@@ -1,6 +1,7 @@
-package com.daw.expenseIncomeManagerBack.createTransfer.application;
+package com.daw.expenseIncomeManagerBack.sendTransfer.application;
 
-import com.daw.expenseIncomeManagerBack.createTransfer.domain.CreateTransferUseCase;
+import com.daw.expenseIncomeManagerBack.sendTransfer.domain.CreateTransferUseCase;
+import com.daw.expenseIncomeManagerBack.sendEmail.domain.SendEmailUseCase;
 import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,26 +11,25 @@ public class CreateTransferApp implements CreateTransferUseCase {
 
     private final UserRepository userRepository;
     private final MovementRepository movementRepository;
+    private final SendEmailUseCase sendEmailUseCase; // <-- Añadido
 
-    public CreateTransferApp(UserRepository userRepository, MovementRepository movementRepository) {
+    public CreateTransferApp(UserRepository userRepository, MovementRepository movementRepository, SendEmailUseCase sendEmailUseCase) {
         this.userRepository = userRepository;
         this.movementRepository = movementRepository;
+        this.sendEmailUseCase = sendEmailUseCase;
     }
 
     @Override
     @Transactional
     public void execute(TransferRequest request) {
-        User origin = userRepository.findById(request.getOriginUserId())
-                .orElseThrow(() -> new RuntimeException("Usuario origen no encontrado"));
+        User origin = userRepository.findById(request.getOriginUserId()).orElseThrow(() -> new RuntimeException("Usuario origen no encontrado"));
 
-        User target = userRepository.findByUsername(request.getTargetUsername())
-                .orElseThrow(() -> new RuntimeException("El usuario destino no existe"));
+        User target = userRepository.findByUsername(request.getTargetUsername()).orElseThrow(() -> new RuntimeException("El usuario destino no existe"));
 
         if (origin.getId().equals(target.getId())) {
             throw new RuntimeException("No puedes enviarte dinero a ti mismo");
         }
 
-        // CORRECCIÓN: Usar getAmount() en lugar de acceso directo
         if (origin.getAccount().getBalance().compareTo(request.getAmount()) < 0) {
             throw new RuntimeException("Saldo insuficiente");
         }
@@ -53,5 +53,12 @@ public class CreateTransferApp implements CreateTransferUseCase {
         userRepository.save(target);
         movementRepository.save(expense);
         movementRepository.save(income);
+
+        if (origin.getEmail() != null && origin.getNotificationsEnabled()) {
+            sendEmailUseCase.sendMovementNotification(origin.getEmail(), "TRANSFERENCIA ENVIADA", request.getAmount(), "A " + target.getUsername());
+        }
+        if (target.getEmail() != null && target.getNotificationsEnabled()) {
+            sendEmailUseCase.sendMovementNotification(target.getEmail(), "TRANSFERENCIA RECIBIDA", request.getAmount(), "De " + origin.getUsername());
+        }
     }
 }

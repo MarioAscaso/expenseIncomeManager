@@ -22,15 +22,18 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(unique = true) // Añadido para notificaciones
+    @Column(unique = true)
     private String email;
 
-    @Column(unique = true) // Añadido para futuro Bizum
+    @Column(unique = true)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoleEnum role;
+
+    @Column(nullable = false)
+    private Boolean notificationsEnabled = true;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id", referencedColumnName = "id")

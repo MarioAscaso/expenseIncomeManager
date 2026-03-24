@@ -22,7 +22,6 @@ public class DeleteMovementApp implements DeleteMovementUseCase {
     public void execute(Long id) {
         Movement m = movementRepository.findById(id).orElseThrow();
 
-        // Borrado físico del archivo
         if (m.getAttachedFileUrl() != null) {
             try {
                 String name = m.getAttachedFileUrl().substring(m.getAttachedFileUrl().lastIndexOf("/") + 1);

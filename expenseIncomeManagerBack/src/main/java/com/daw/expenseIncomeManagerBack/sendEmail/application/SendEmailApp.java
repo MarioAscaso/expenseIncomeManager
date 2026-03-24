@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 @Service
 public class SendEmailApp implements SendEmailUseCase {
 
-    // Dependemos de la interfaz (Domain), no de la implementación (Infrastructure)
     private final EmailSenderPort emailSenderPort;
 
     public SendEmailApp(EmailSenderPort emailSenderPort) {
@@ -19,12 +18,8 @@ public class SendEmailApp implements SendEmailUseCase {
     @Override
     public void sendMovementNotification(String email, String type, BigDecimal amount, String description) {
         String subject = "Alerta de Movimiento: " + type;
-        String body = String.format(
-                "Se ha registrado un nuevo movimiento en su cuenta.\n\nTipo: %s\nImporte: %s€\nDescripción: %s",
-                type, amount, description
-        );
+        String body = String.format("Se ha registrado un nuevo movimiento en su cuenta.\n\nTipo: %s\nImporte: %s€\nDescripción: %s", type, amount, description);
 
-        // Usamos el puerto para enviar el correo
         emailSenderPort.send(email, subject, body);
     }
 }

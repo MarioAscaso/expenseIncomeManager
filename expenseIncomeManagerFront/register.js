@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('registerForm');
     const alertMessage = document.getElementById('alertMessage');
 
-    // Si ya estamos logueados, no pintamos nada aquí
     if (localStorage.getItem('currentUser')) {
         window.location.href = 'index.html';
     }

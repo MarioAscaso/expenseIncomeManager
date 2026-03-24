@@ -26,26 +26,29 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
             System.out.println("Base de datos vacía. Creando usuarios y cuentas por defecto...");
 
-            // --- SUPERADMIN ---
             User superAdmin = new User();
             superAdmin.setUsername("superadmin");
             superAdmin.setPassword(passwordEncoder.encode("1234"));
             superAdmin.setRole(RoleEnum.SUPERADMIN);
-            superAdmin.setAccount(new Account(null, new BigDecimal("1500.00"))); // Enlazamos su cuenta
+            superAdmin.setAccount(new Account(null, new BigDecimal("1500.00")));
+            superAdmin.setEmail("ascasovicentemario@gmail.com");
+            superAdmin.setPhoneNumber("673849373");
 
-            // --- ADMIN ---
             User admin = new User();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("1234"));
             admin.setRole(RoleEnum.ADMIN);
-            admin.setAccount(new Account(null, new BigDecimal("500.00"))); // Enlazamos su cuenta
+            admin.setAccount(new Account(null, new BigDecimal("500.00")));
+            admin.setEmail("bicimadmario@gmail.com");
+            admin.setPhoneNumber("638463937");
 
-            // --- USER ---
             User basicUser = new User();
             basicUser.setUsername("user");
             basicUser.setPassword(passwordEncoder.encode("1234"));
             basicUser.setRole(RoleEnum.BASIC);
-            basicUser.setAccount(new Account(null, new BigDecimal("100.00"))); // Enlazamos su cuenta
+            basicUser.setAccount(new Account(null, new BigDecimal("100.00")));
+            basicUser.setEmail("ascasomario27@gmail.com");
+            basicUser.setPhoneNumber("600123456");
 
             userRepository.save(superAdmin);
             userRepository.save(admin);

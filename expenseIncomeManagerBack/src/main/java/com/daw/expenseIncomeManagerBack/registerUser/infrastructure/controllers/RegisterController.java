@@ -1,7 +1,7 @@
-package com.daw.expenseIncomeManagerBack.RegisterUser.infrastructure;
+package com.daw.expenseIncomeManagerBack.registerUser.infrastructure.controllers;
 
-import com.daw.expenseIncomeManagerBack.RegisterUser.application.RegisterRequest;
-import com.daw.expenseIncomeManagerBack.RegisterUser.domain.RegisterUseCase;
+import com.daw.expenseIncomeManagerBack.registerUser.application.RegisterRequest;
+import com.daw.expenseIncomeManagerBack.registerUser.domain.RegisterUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class RegisterController {
 
-    private final RegisterUseCase registerUseCase; // NUEVO
+    private final RegisterUseCase registerUseCase;
 
     public RegisterController(RegisterUseCase registerUseCase) {
-        this.registerUseCase = registerUseCase; // NUEVO
+        this.registerUseCase = registerUseCase;
     }
 
     @PostMapping("/register")

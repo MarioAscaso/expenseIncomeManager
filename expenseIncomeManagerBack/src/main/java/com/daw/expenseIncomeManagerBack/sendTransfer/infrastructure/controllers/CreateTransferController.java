@@ -1,7 +1,7 @@
-package com.daw.expenseIncomeManagerBack.createTransfer.infrastructure;
+package com.daw.expenseIncomeManagerBack.sendTransfer.infrastructure.controllers;
 
-import com.daw.expenseIncomeManagerBack.createTransfer.application.TransferRequest;
-import com.daw.expenseIncomeManagerBack.createTransfer.domain.CreateTransferUseCase;
+import com.daw.expenseIncomeManagerBack.sendTransfer.application.TransferRequest;
+import com.daw.expenseIncomeManagerBack.sendTransfer.domain.CreateTransferUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

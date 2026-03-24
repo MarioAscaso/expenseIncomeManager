@@ -32,7 +32,6 @@ public class Movement {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    // NUEVO: Campo para guardar la URL del archivo adjunto (puede ser nulo si no suben nada)
     @Column(nullable = true)
     private String attachedFileUrl;
 

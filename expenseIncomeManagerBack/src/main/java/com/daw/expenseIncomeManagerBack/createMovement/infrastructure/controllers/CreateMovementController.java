@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.createMovement.infrastructure;
+package com.daw.expenseIncomeManagerBack.createMovement.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.createMovement.application.CreateMovementRequest;
 import com.daw.expenseIncomeManagerBack.createMovement.domain.CreateMovementUseCase;
@@ -19,7 +19,6 @@ public class CreateMovementController {
         this.createMovementUseCase = createMovementUseCase;
     }
 
-    // NUEVO: Le decimos que consume multipart/form-data y usamos @ModelAttribute
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<Movement> createMovement(@Valid @ModelAttribute CreateMovementRequest request) {
         Movement savedMovement = createMovementUseCase.execute(request);

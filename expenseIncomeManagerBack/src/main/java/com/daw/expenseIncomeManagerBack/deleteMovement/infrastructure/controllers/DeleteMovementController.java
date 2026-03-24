@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.deleteMovement.infrastructure;
+package com.daw.expenseIncomeManagerBack.deleteMovement.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.deleteMovement.domain.DeleteMovementUseCase;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +15,9 @@ public class DeleteMovementController {
         this.deleteMovementUseCase = deleteMovementUseCase;
     }
 
-    // Escucha peticiones DELETE en /api/movements/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMovement(@PathVariable Long id) {
         deleteMovementUseCase.execute(id);
-        return ResponseEntity.noContent().build(); // Retorna 204 No Content (éxito sin cuerpo)
+        return ResponseEntity.noContent().build();
     }
 }

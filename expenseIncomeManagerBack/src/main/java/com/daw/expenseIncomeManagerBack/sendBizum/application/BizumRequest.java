@@ -1,13 +1,12 @@
-package com.daw.expenseIncomeManagerBack.createTransfer.application;
+package com.daw.expenseIncomeManagerBack.sendBizum.application;
 
 import lombok.Data;
-
 import java.math.BigDecimal;
 
 @Data
-public class TransferRequest {
+public class BizumRequest {
     private Long originUserId;
-    private String targetUsername;
+    private String targetPhoneNumber;
     private BigDecimal amount;
     private String description;
 }

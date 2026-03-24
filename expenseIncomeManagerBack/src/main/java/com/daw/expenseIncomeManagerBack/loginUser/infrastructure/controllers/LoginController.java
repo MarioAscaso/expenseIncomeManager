@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.loginUser.infrastructure;
+package com.daw.expenseIncomeManagerBack.loginUser.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.loginUser.application.LoginRequest;
 import com.daw.expenseIncomeManagerBack.loginUser.application.LoginResponse;

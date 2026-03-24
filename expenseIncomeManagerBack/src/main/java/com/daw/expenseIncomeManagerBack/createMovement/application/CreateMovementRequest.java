@@ -24,6 +24,5 @@ public class CreateMovementRequest {
     @NotNull(message = "El ID del usuario es obligatorio")
     private Long userId;
 
-    // NUEVO: Archivo opcional (el ticket o factura)
     private MultipartFile file;
 }

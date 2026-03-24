@@ -25,46 +25,55 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
     }
 
     @Override
-    @Transactional // Vital para que si falla algo, el saldo no se quede corrompido
+    @Transactional
     public Movement execute(Long id, UpdateMovementRequest request) {
-        Movement movement = movementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
+        Movement movement = movementRepository.findById(id).orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
 
         User user = movement.getUser();
 
-        // --- NUEVO: REGLAS DE SEGURIDAD EN EL BACKEND ---
-        // 1. Los Administradores pueden ver y borrar, pero no editar (según la lógica del frontend)
         if (user.getRole() == RoleEnum.ADMIN) {
             throw new RuntimeException("Los administradores no tienen permisos para editar movimientos.");
         }
 
-        // 2. Los usuarios BASIC solo tienen 5 minutos para arrepentirse y editar
         if (user.getRole() == RoleEnum.BASIC) {
             long minutesPassed = Duration.between(movement.getCreatedAt(), LocalDateTime.now()).toMinutes();
             if (minutesPassed > 5) {
                 throw new RuntimeException("Tiempo agotado. Por seguridad, no se puede modificar un movimiento pasados 5 minutos.");
             }
         }
-        // El SUPERADMIN no entra en estos if, por lo que tiene poder absoluto.
 
-        // 1. REVERTIMOS EL SALDO ANTIGUO
         if (movement.getType() == MovementTypeEnum.INCOME) {
             user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
         } else {
             user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
         }
 
-        // 2. ACTUALIZAMOS LOS DATOS DEL MOVIMIENTO
         movement.setDescription(request.getDescription());
         movement.setAmount(request.getAmount());
         movement.setType(request.getType());
-        // Nota: La fecha (createdAt) no se toca, cumpliendo el enunciado.
 
-        // 3. APLICAMOS EL NUEVO SALDO
         if (movement.getType() == MovementTypeEnum.INCOME) {
             user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
         } else {
             user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+        }
+
+        if (request.getFile() != null && !request.getFile().isEmpty()) {
+            try {
+                if (movement.getAttachedFileUrl() != null) {
+                    String oldFileName = movement.getAttachedFileUrl().substring(movement.getAttachedFileUrl().lastIndexOf("/") + 1);
+                    java.nio.file.Paths.get("uploads/" + oldFileName).toFile().delete();
+                }
+
+                String newFileName = java.util.UUID.randomUUID().toString() + "_" + request.getFile().getOriginalFilename();
+                java.nio.file.Path path = java.nio.file.Paths.get("uploads/" + newFileName);
+                java.nio.file.Files.createDirectories(path.getParent());
+                java.nio.file.Files.write(path, request.getFile().getBytes());
+
+                movement.setAttachedFileUrl("http://localhost:9393/uploads/" + newFileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al actualizar el archivo.");
+            }
         }
 
         userRepository.save(user);

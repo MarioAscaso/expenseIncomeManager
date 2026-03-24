@@ -17,7 +17,30 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'login.html';
     });
 
-    // --- 3. ELEMENTOS DEL DOM ---
+    // --- 3. LÓGICA CAMPANITA DE NOTIFICACIONES ---
+    const btnToggle = document.getElementById('btnToggleNotifications');
+    const statusText = document.getElementById('notificationStatus');
+
+    btnToggle.addEventListener('click', function() {
+        fetch(`http://localhost:9393/api/users/${currentUser.id}/toggle-notifications`, {
+            method: 'PUT'
+        })
+        .then(res => res.json())
+        .then(isEnabled => {
+            if(isEnabled) {
+                statusText.innerText = "Activas";
+                btnToggle.classList.replace('btn-outline-danger', 'btn-outline-secondary');
+                showNotification('Notificaciones de correo ACTIVADAS', 'success');
+            } else {
+                statusText.innerText = "Apagadas";
+                btnToggle.classList.replace('btn-outline-secondary', 'btn-outline-danger');
+                showNotification('Notificaciones de correo DESACTIVADAS', 'info');
+            }
+        })
+        .catch(err => showNotification('Error al cambiar notificaciones', 'error'));
+    });
+
+    // --- 4. ELEMENTOS DEL DOM ---
     const calendarElement = document.getElementById('calendar');
     const transactionModalElement = document.getElementById('transactionModal');
     const transactionModal = new bootstrap.Modal(transactionModalElement);
@@ -28,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileViewer = document.getElementById('fileViewer');
     const fileLink = document.getElementById('fileLink');
     
-    // --- 4. INICIALIZAR FULLCALENDAR ---
+    // --- 5. INICIALIZAR FULLCALENDAR ---
     const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
         locale: 'es',
@@ -48,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     calendar.render();
 
-    // --- 5. CARGAR DATOS DEL BACKEND ---
+    // --- 6. CARGAR DATOS DEL BACKEND ---
     function loadTransactionsFromBackend() {
         fetch(`http://localhost:9393/api/movements?userId=${currentUser.id}`)
             .then(response => response.json())
@@ -63,7 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`http://localhost:9393/api/users/${currentUser.id}/balance`)
             .then(response => response.json())
             .then(data => {
-                updateBalanceColor(data.balance);
+                const balanceElement = document.getElementById('balanceValue');
+                balanceElement.innerText = data.balance.toFixed(2) + " €";
+                balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
+                if (data.balance > 0) balanceElement.classList.add('text-success');
+                else if (data.balance === 0) balanceElement.classList.add('text-warning');
+                else balanceElement.classList.add('text-danger');
             })
             .catch(error => console.error('Error cargando saldo:', error));
     }
@@ -71,17 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTransactionsFromBackend();
     loadBalanceFromBackend();
 
-    // --- 6. FUNCIONES DE INTERFAZ Y MODAL ---
-    function updateBalanceColor(amount) {
-        const balanceElement = document.getElementById('balanceValue');
-        balanceElement.innerText = amount.toFixed(2) + " €";
-        
-        balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
-        if (amount > 0) balanceElement.classList.add('text-success');
-        else if (amount === 0) balanceElement.classList.add('text-warning');
-        else balanceElement.classList.add('text-danger');
-    }
-
+    // --- 7. FUNCIONES DE INTERFAZ Y MODAL ---
     function prepareModalForCreation(date) {
         document.getElementById('modalTitle').innerText = 'Nueva Transacción';
         document.getElementById('transactionId').value = '';
@@ -105,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('amount').value = event.extendedProps.amount;
         document.getElementById('category').value = event.extendedProps.type;
         
-        fileInputContainer.classList.add('d-none');
+        fileInputContainer.classList.remove('d-none');
         if (event.extendedProps.attachedFileUrl) {
             fileViewer.classList.remove('d-none');
             fileLink.href = event.extendedProps.attachedFileUrl;
@@ -126,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isExpired) {
                 btnDelete.classList.add('d-none');
                 btnSave.classList.add('d-none');
+                fileInputContainer.classList.add('d-none');
                 toggleFormFields(true);
                 document.getElementById('modalTitle').innerText = 'Consulta (Tiempo agotado)';
             } else {
@@ -137,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (currentUser.role === 'admin') {
             btnDelete.classList.remove('d-none');
             btnSave.classList.add('d-none');
+            fileInputContainer.classList.add('d-none');
             toggleFormFields(true);
             document.getElementById('modalTitle').innerText = 'Consulta de Transacción';
         } else if (currentUser.role === 'superadmin') {
@@ -153,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category').disabled = disabled;
     }
 
-    // --- 7. ENVÍO DEL FORMULARIO DE MOVIMIENTOS ---
+    // --- 8. GUARDAR O ACTUALIZAR MOVIMIENTO ---
     transactionForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -161,41 +181,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const description = document.getElementById('description').value;
         const amount = document.getElementById('amount').value;
         const category = document.getElementById('category').value;
+        const fileInput = document.getElementById('file').files[0];
         
+        const formData = new FormData();
+        formData.append('description', description);
+        formData.append('amount', amount);
+        formData.append('type', category);
+        if (fileInput) formData.append('file', fileInput);
+
         if (id) {
-            const requestBody = { description, amount: parseFloat(amount), type: category };
+            // ACTUALIZAR (PUT)
             fetch(`http://localhost:9393/api/movements/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+                body: formData
             })
-            .then(response => {
+            .then(async response => {
                 if(response.ok) return response.json();
-                throw new Error("Error al actualizar");
+                const err = await response.json();
+                throw new Error(err.error || "Error al actualizar");
             })
             .then(() => {
-                showNotification('Movimiento actualizado', 'success');
+                showNotification('Movimiento actualizado correctamente', 'success');
                 transactionModal.hide();
                 loadTransactionsFromBackend();
                 loadBalanceFromBackend();
             })
-            .catch(error => showNotification('Error actualizando', 'danger'));
+            .catch(error => showNotification(error.message, 'error'));
         } else {
-            const fileInput = document.getElementById('file').files[0];
-            const formData = new FormData();
-            formData.append('description', description);
-            formData.append('amount', amount);
-            formData.append('type', category);
+            // CREAR (POST)
             formData.append('userId', currentUser.id);
-            if (fileInput) formData.append('file', fileInput);
-
             fetch('http://localhost:9393/api/movements', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
+            .then(async response => {
                 if(response.ok) return response.json();
-                throw new Error("Error al guardar");
+                const err = await response.json();
+                throw new Error(err.error || "Error al guardar");
             })
             .then(() => {
                 showNotification('Transacción creada correctamente', 'success');
@@ -203,11 +225,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadTransactionsFromBackend();
                 loadBalanceFromBackend();
             })
-            .catch(error => showNotification('Error guardando el movimiento', 'danger'));
+            .catch(error => showNotification(error.message, 'error'));
         }
     });
 
-    // --- 8. LÓGICA DE TRANSFERENCIAS (NUEVO) ---
+    // --- 9. LÓGICA DE TRANSFERENCIAS CLÁSICAS ---
     document.getElementById('transferForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -227,42 +249,77 @@ document.addEventListener('DOMContentLoaded', function() {
             if(response.ok) {
                 showNotification('Transferencia enviada con éxito', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
-                // Limpiamos el formulario
                 document.getElementById('transferForm').reset();
                 loadTransactionsFromBackend();
                 loadBalanceFromBackend();
             } else {
-                const err = await response.text();
+                const err = await response.text(); // <-- OJO, esta API devuelve texto (String)
                 throw new Error(err);
             }
         })
-        .catch(error => showNotification(error.message, 'danger'));
+        .catch(error => showNotification(error.message, 'error'));
     });
 
-    // --- 9. LÓGICA DE ELIMINACIÓN ---
+    // --- 10. LÓGICA DEL BIZUM (NUEVO) ---
+    document.getElementById('bizumForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const payload = {
+            originUserId: currentUser.id,
+            targetPhoneNumber: document.getElementById('bizumPhone').value,
+            amount: parseFloat(document.getElementById('bizumAmount').value),
+            description: document.getElementById('bizumConcept').value
+        };
+
+        fetch('http://localhost:9393/api/bizum', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(async response => {
+            if(response.ok) {
+                showNotification('Bizum enviado al instante', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('bizumModal')).hide();
+                document.getElementById('bizumForm').reset();
+                loadTransactionsFromBackend();
+                loadBalanceFromBackend();
+            } else {
+                const err = await response.json(); // <-- Gracias al manejador global
+                throw new Error(err.error || "Error al enviar el Bizum");
+            }
+        })
+        .catch(error => showNotification(error.message, 'error'));
+    });
+
+    // --- 11. BORRAR ---
     btnDelete.addEventListener('click', function() {
         const id = document.getElementById('transactionId').value;
         if (id) {
             fetch(`http://localhost:9393/api/movements/${id}`, { method: 'DELETE' })
-            .then(response => {
+            .then(async response => {
                 if(response.ok) {
                     showNotification('Movimiento eliminado', 'success');
                     transactionModal.hide();
                     loadTransactionsFromBackend();
                     loadBalanceFromBackend();
-                } else { throw new Error("Error al eliminar"); }
+                } else { 
+                    const err = await response.json();
+                    throw new Error(err.error || "Error al eliminar"); 
+                }
             })
-            .catch(error => showNotification('Error al eliminar el movimiento', 'danger'));
+            .catch(error => showNotification(error.message, 'error'));
         }
     });
 
-    // --- 10. NOTIFICACIONES ---
+    // --- 12. SWEETALERT2 ---
     function showNotification(message, type) {
-        const notificationArea = document.getElementById('notificationArea');
-        const notificationMessage = document.getElementById('notificationMessage');
-        notificationArea.className = `alert alert-${type} mt-3 mb-3`;
-        notificationMessage.innerText = message;
-        notificationArea.classList.remove('d-none');
-        setTimeout(() => notificationArea.classList.add('d-none'), 5000);
+        Swal.fire({
+            title: type === 'success' ? '¡Éxito!' : (type === 'error' ? 'Error' : 'Aviso'),
+            text: message,
+            icon: type,
+            confirmButtonColor: type === 'success' ? '#28a745' : (type === 'info' ? '#17a2b8' : '#dc3545'),
+            timer: 4000,
+            timerProgressBar: true
+        });
     }
 });

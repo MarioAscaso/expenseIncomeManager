@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.updateMovement.infrastructure;
+package com.daw.expenseIncomeManagerBack.updateMovement.infrastructure.controllers;
 
 import com.daw.expenseIncomeManagerBack.shared.domain.Movement;
 import com.daw.expenseIncomeManagerBack.updateMovement.application.UpdateMovementRequest;
@@ -18,8 +18,8 @@ public class UpdateMovementController {
         this.updateMovementUseCase = updateMovementUseCase;
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Movement> updateMovement(@PathVariable Long id, @Valid @RequestBody UpdateMovementRequest request) {
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<Movement> updateMovement(@PathVariable Long id, @Valid @ModelAttribute UpdateMovementRequest request) {
         Movement updatedMovement = updateMovementUseCase.execute(id, request);
         return ResponseEntity.ok(updatedMovement);
     }

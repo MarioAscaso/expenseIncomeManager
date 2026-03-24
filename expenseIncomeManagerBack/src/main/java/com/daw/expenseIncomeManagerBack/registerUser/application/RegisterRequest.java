@@ -1,4 +1,4 @@
-package com.daw.expenseIncomeManagerBack.RegisterUser.application;
+package com.daw.expenseIncomeManagerBack.registerUser.application;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
