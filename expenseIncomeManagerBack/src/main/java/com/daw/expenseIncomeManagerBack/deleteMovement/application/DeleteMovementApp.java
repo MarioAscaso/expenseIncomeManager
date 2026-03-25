@@ -4,37 +4,39 @@ import com.daw.expenseIncomeManagerBack.deleteMovement.domain.DeleteMovementUseC
 import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.io.File;
-import java.nio.file.Paths;
 
 @Service
 public class DeleteMovementApp implements DeleteMovementUseCase {
+
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
+    private final FileStoragePort fileStoragePort;
 
-    public DeleteMovementApp(MovementRepository movementRepository, UserRepository userRepository) {
+    public DeleteMovementApp(MovementRepository movementRepository, UserRepository userRepository, FileStoragePort fileStoragePort) {
         this.movementRepository = movementRepository;
         this.userRepository = userRepository;
+        this.fileStoragePort = fileStoragePort;
     }
 
     @Override
     @Transactional
     public void execute(Long id) {
-        Movement m = movementRepository.findById(id).orElseThrow();
+        Movement movement = movementRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
 
-        if (m.getAttachedFileUrl() != null) {
-            try {
-                String name = m.getAttachedFileUrl().substring(m.getAttachedFileUrl().lastIndexOf("/") + 1);
-                File f = Paths.get("uploads/" + name).toFile();
-                if (f.exists()) f.delete();
-            } catch (Exception e) { System.err.println("Error borrando físico"); }
+        User user = movement.getUser();
+
+        if (movement.getType() == MovementTypeEnum.INCOME) {
+            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+        } else {
+            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
         }
 
-        User u = m.getUser();
-        if (m.getType() == MovementTypeEnum.INCOME) u.getAccount().setBalance(u.getAccount().getBalance().subtract(m.getAmount()));
-        else u.getAccount().setBalance(u.getAccount().getBalance().add(m.getAmount()));
+        if (movement.getAttachedFileUrl() != null) {
+            fileStoragePort.deleteFile(movement.getAttachedFileUrl());
+        }
 
-        userRepository.save(u);
-        movementRepository.delete(m);
+        userRepository.save(user);
+        movementRepository.delete(movement);
     }
 }

@@ -15,7 +15,7 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
 
     private final MovementRepository movementRepository;
     private final UserRepository userRepository;
-    private final FileStoragePort fileStoragePort; 
+    private final FileStoragePort fileStoragePort;
 
     public UpdateMovementApp(MovementRepository movementRepository, UserRepository userRepository, FileStoragePort fileStoragePort) {
         this.movementRepository = movementRepository;

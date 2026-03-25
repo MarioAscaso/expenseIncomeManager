@@ -29,10 +29,10 @@ public class Movement {
     @Column(nullable = false)
     private MovementTypeEnum type;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = true)
+    @Column
     private String attachedFileUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,6 +41,8 @@ public class Movement {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
     }
 }

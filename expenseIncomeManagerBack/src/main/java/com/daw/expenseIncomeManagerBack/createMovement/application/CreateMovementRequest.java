@@ -25,4 +25,6 @@ public class CreateMovementRequest {
     private Long userId;
 
     private MultipartFile file;
+
+    private String date;
 }

@@ -6,6 +6,9 @@ import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Service
 public class CreateMovementApp implements CreateMovementUseCase {
 
@@ -14,7 +17,8 @@ public class CreateMovementApp implements CreateMovementUseCase {
     private final SendEmailUseCase sendEmailUseCase;
     private final FileStoragePort fileStoragePort;
 
-    public CreateMovementApp(MovementRepository movementRepository, UserRepository userRepository, SendEmailUseCase sendEmailUseCase, FileStoragePort fileStoragePort) {
+    public CreateMovementApp(MovementRepository movementRepository, UserRepository userRepository,
+                             SendEmailUseCase sendEmailUseCase, FileStoragePort fileStoragePort) {
         this.movementRepository = movementRepository;
         this.userRepository = userRepository;
         this.sendEmailUseCase = sendEmailUseCase;
@@ -32,6 +36,10 @@ public class CreateMovementApp implements CreateMovementUseCase {
         movement.setType(request.getType());
         movement.setUser(user);
 
+        if (request.getDate() != null && !request.getDate().isEmpty()) {
+            movement.setCreatedAt(LocalDate.parse(request.getDate()).atTime(LocalTime.now()));
+        }
+
         if (request.getFile() != null && !request.getFile().isEmpty()) {
             String fileUrl = fileStoragePort.saveFile(request.getFile());
             movement.setAttachedFileUrl(fileUrl);
@@ -47,7 +55,10 @@ public class CreateMovementApp implements CreateMovementUseCase {
         Movement savedMovement = movementRepository.save(movement);
 
         if (user.getEmail() != null && user.getNotificationsEnabled()) {
-            sendEmailUseCase.sendMovementNotification(user.getEmail(), savedMovement.getType().name(), savedMovement.getAmount(), savedMovement.getDescription());
+            sendEmailUseCase.sendMovementNotification(
+                    user.getEmail(), savedMovement.getType().name(),
+                    savedMovement.getAmount(), savedMovement.getDescription()
+            );
         }
 
         return savedMovement;

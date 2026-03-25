@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- CONFIGURACIÓN GLOBAL ---
     const API_BASE_URL = 'http://localhost:9393/api';
     
-    // --- 1. SEGURIDAD: COMPROBAR SESIÓN ---
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) {
         window.location.href = 'login.html';
@@ -14,13 +12,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('loggedUserName').innerText = currentUser.username;
     document.getElementById('loggedUserRole').innerText = currentUser.role;
 
-    // --- 2. LOGOUT ---
     document.getElementById('btnLogout').addEventListener('click', function() {
         localStorage.removeItem('currentUser'); 
         window.location.href = 'login.html';
     });
 
-    // --- 3. CAMPANITA DE NOTIFICACIONES ---
     const btnToggle = document.getElementById('btnToggleNotifications');
     const statusText = document.getElementById('notificationStatus');
 
@@ -41,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(() => showNotification('Error al cambiar notificaciones', 'error'));
     });
 
-    // --- 4. DOM ELEMENTS ---
     const calendarElement = document.getElementById('calendar');
     const transactionModalElement = document.getElementById('transactionModal');
     const transactionModal = new bootstrap.Modal(transactionModalElement);
@@ -52,11 +47,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileViewer = document.getElementById('fileViewer');
     const fileLink = document.getElementById('fileLink');
     
-    // --- 5. INICIALIZAR FULLCALENDAR ---
     const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
         locale: 'es',
+        height: '100%', 
+        headerToolbar: false,           
+        showNonCurrentDates: false,     
+        fixedWeekCount: false,          
+        firstDay: 1,                    
         events: [],
+        
+        eventDidMount: function(info) {
+            const isIncome = info.event.extendedProps.type === 'INCOME';
+            info.el.style.backgroundColor = isIncome ? '#2a9d8f' : '#e63946'; 
+        },
+        
+        datesSet: function(info) {
+            document.getElementById('customCalendarTitle').innerText = info.view.title;
+        },
+
         dateClick: (info) => {
             prepareModalForCreation(info.dateStr);
             transactionModal.show();
@@ -70,7 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     calendar.render();
 
-    // --- 6. FUNCIONES DE CARGA CENTRALIZADAS ---
+    document.getElementById('btnPrevMonth').addEventListener('click', () => calendar.prev());
+    document.getElementById('btnNextMonth').addEventListener('click', () => calendar.next());
+    document.getElementById('btnToday').addEventListener('click', () => calendar.today());
+
     function loadTransactionsFromBackend() {
         fetch(`${API_BASE_URL}/movements?userId=${currentUser.id}`)
             .then(res => res.json())
@@ -100,9 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBalanceFromBackend();
     }
 
-    refreshDashboard(); // Carga inicial
+    refreshDashboard(); 
 
-    // --- 7. MODAL UI HELPERS ---
     function prepareModalForCreation(date) {
         document.getElementById('modalTitle').innerText = 'Nueva Transacción';
         document.getElementById('transactionId').value = '';
@@ -177,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return response.json().then(err => { throw new Error(err.error || "Error en la petición") });
     }
 
-    // --- 8. CRUD MOVIMIENTOS ---
     transactionForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -201,6 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => showNotification(err.message, 'error'));
         } else {
             formData.append('userId', currentUser.id);
+            formData.append('date', transactionForm.dataset.date);
+
             fetch(`${API_BASE_URL}/movements`, { method: 'POST', body: formData })
             .then(handleApiResponse)
             .then(() => {
@@ -226,7 +238,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- 9. TRANSFERENCIAS Y BIZUM ---
     function executeMoneyTransfer(endpoint, payload, modalId, formId, successMsg) {
         fetch(`${API_BASE_URL}/${endpoint}`, {
             method: 'POST',
@@ -234,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify(payload)
         })
         .then(response => {
-            if (response.ok) return response; // Si es ok, no intentamos parsear por si es texto vacío
+            if (response.ok) return response; 
             return response.json().then(err => { throw new Error(err.error || "Error en el envío") });
         })
         .then(() => {
@@ -268,7 +279,6 @@ document.addEventListener('DOMContentLoaded', function() {
         executeMoneyTransfer('bizum', payload, 'bizumModal', 'bizumForm', 'Bizum enviado al instante');
     });
 
-    // --- 10. NOTIFICACIONES UI ---
     function showNotification(message, type) {
         Swal.fire({
             title: type === 'success' ? '¡Éxito!' : (type === 'error' ? 'Error' : 'Aviso'),
