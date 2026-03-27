@@ -1,18 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+/* Tipografía limpia y legible */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
+/* =========================================
+   1. VARIABLES DE TEMA (Estilo Cuaderno/Ledger)
+========================================= */
 :root {
-    --primary: #4361ee;
-    --secondary: #3f37c9;
-    --success: #2a9d8f;
-    --danger: #e63946;
-    --warning: #f4a261;
-    --bizum: #00c4b3;
-    --bg-color: #f4f7f8;
-    --card-bg: #ffffff;
-    --text-main: #2b2d42;
-    --text-muted: #8d99ae;
+    /* Tonos Pizarra/Grafito */
+    --primary: #374151;       
+    --secondary: #1f2937;     
+    --success: #10b981;       
+    --danger: #ef4444;        
+    --warning: #f59e0b;       
+    --bizum: #0ea5e9;         
+    
+    --bg-color: #f9fafb;      
+    --card-bg: #ffffff;       
+    --text-main: #111827;     
+    --text-muted: #4b5563;    
+    
+    --border-color: #9ca3af;  
+    --ui-border: #d1d5db;     
+    
+    --radius-ui: 6px;         
 }
 
+/* =========================================
+   2. BASE DE LA PÁGINA
+========================================= */
 body {
     background-color: var(--bg-color);
     font-family: 'Poppins', sans-serif;
@@ -25,131 +39,167 @@ body {
     flex-direction: column;
 }
 
-.custom-navbar {
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid #edf2f7;
-    padding: 0.4rem 0.5rem;
-    height: 60px;
+/* =========================================
+   3. NAVBAR FUSIONADA CON EL CALENDARIO
+========================================= */
+.custom-navbar { 
+    /* MISMO GRIS QUE LA CABECERA DE LUNES, MARTES... */
+    background-color: #d1d5db !important; 
+    border-bottom: 1px solid var(--border-color) !important; 
+    padding: 0.4rem 0.5rem; 
+    height: 60px; 
+    box-shadow: none !important; 
 }
 
-.navbar-brand {
-    letter-spacing: -0.5px;
+/* Forzamos el color del logo y el mes a gris oscuro (tinta) */
+.navbar-brand, #customCalendarTitle { 
+    letter-spacing: -0.5px; 
+    color: var(--secondary) !important;
 }
 
-.balance-badge {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    height: 32px;
+/* Píldora del saldo en blanco para que resalte sobre el gris */
+.balance-badge { 
+    background-color: #ffffff; 
+    border: 1px solid var(--border-color); 
+    height: 32px; 
+    border-radius: var(--radius-ui) !important;
 }
 
-.btn {
-    transition: all 0.2s ease;
+/* Textos (Hola, Admin) oscuros y remarcados */
+.custom-navbar .text-muted {
+    color: #374151 !important;
+    font-weight: 500;
 }
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+/* Botones claritos de la navbar (Flechas, Hoy, Campanita) */
+.custom-navbar .btn-light, .custom-navbar .btn-outline-primary {
+    background-color: #ffffff !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+.custom-navbar .btn-light:hover, .custom-navbar .btn-outline-primary:hover {
+    background-color: #f3f4f6 !important;
 }
 
-.btn:active {
-    transform: translateY(0);
+/* Botones generales (Bizum, Transferencia) */
+.btn, .rounded-pill, .rounded-circle { 
+    border-radius: var(--radius-ui) !important; 
+    transition: all 0.2s ease; 
+    box-shadow: none !important;
+    border: 1px solid transparent;
+}
+.btn-primary { background-color: var(--primary) !important; border-color: var(--primary) !important; }
+.btn-primary:hover { background-color: var(--secondary) !important; }
+
+/* =========================================
+   4. FORMULARIOS Y MODALES ESTRUCTURADOS
+========================================= */
+.form-control, .form-select { 
+    border-radius: var(--radius-ui); 
+    border: 1px solid var(--ui-border); 
+    padding: 0.7rem 1rem; 
+    font-size: 0.95rem; 
+    background-color: #f9fafb; 
+}
+.form-control:focus, .form-select:focus { 
+    background-color: #ffffff; 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.1); 
 }
 
-.form-control, .form-select {
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    padding: 0.7rem 1rem;
-    font-size: 0.95rem;
-    background-color: #f8fafc;
+.modal-content { 
+    border-radius: 8px; 
+    border: 1px solid var(--ui-border); 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+}
+.modal-header { 
+    border-bottom: 1px solid var(--ui-border); 
+    background-color: #f3f4f6;
+    border-radius: 8px 8px 0 0; 
+    padding: 1.2rem 1.5rem; 
+}
+.modal-footer { 
+    border-top: 1px solid var(--ui-border); 
+    background-color: #f3f4f6;
+    border-radius: 0 0 8px 8px;
+    padding: 1rem 1.5rem; 
 }
 
-.form-control:focus, .form-select:focus {
-    background-color: #ffffff;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
-}
-
-.modal-content {
-    border-radius: 20px;
-    border: none;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-}
-
-.modal-header {
-    border-bottom: 1px solid #edf2f7;
-    border-radius: 20px 20px 0 0;
-    padding: 1.5rem;
-}
-
-.modal-footer {
-    border-top: 1px solid #edf2f7;
-    padding: 1.2rem 1.5rem;
-}
-
+/* =========================================
+   5. CONTENEDOR PRINCIPAL DEL CALENDARIO
+========================================= */
 .main-container {
-    max-width: 1400px;
-    flex: 1; 
+    max-width: 1500px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 15px;
+    height: calc(100vh - 65px); 
     display: flex;
     flex-direction: column;
-    padding-bottom: 15px;
-    margin: 0 auto;
-    width: 100%;
 }
 
 #calendar {
-    flex: 1; 
-    min-height: 0; 
+    flex-grow: 1;
+    height: 100%; 
     background: var(--card-bg);
-    padding: 10px 15px; 
-    border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-    margin-top: 5px; 
-    margin-bottom: 0;
+    padding: 0; 
+    border-radius: 0; 
+    border: 1px solid var(--border-color); 
+    box-shadow: none; 
 }
 
-.fc-theme-standard td, .fc-theme-standard th {
-    border-color: #f1f5f9;
+/* =========================================
+   6. DESTRUCCIÓN DEL SCROLL EXTERNO
+========================================= */
+.fc-scroller, 
+.fc-scroller-liquid-absolute,
+.fc-view-harness {
+    overflow: hidden !important; 
 }
 
+/* =========================================
+   7. DISEÑO "CUADRÍCULA DE PAPEL"
+========================================= */
+.fc-theme-standard td, .fc-theme-standard th { 
+    border: 1px solid var(--border-color) !important; 
+}
+
+.fc-col-header-cell {
+    background-color: #d1d5db !important; 
+}
 .fc-col-header-cell-cushion {
-    color: var(--text-main);
-    font-weight: 600;
-    padding: 8px 0 !important;
-    text-transform: uppercase;
+    color: #1f2937 !important; 
+    font-weight: 700; 
+    padding: 8px 0 !important; 
+    text-transform: uppercase; 
     font-size: 0.85rem;
 }
 
+.fc-daygrid-day {
+    background-color: transparent !important; 
+}
+.fc-scrollgrid-sync-table tbody tr:nth-child(odd) {
+    background-color: #e5e7eb !important; 
+}
+.fc-scrollgrid-sync-table tbody tr:nth-child(even) {
+    background-color: #f9fafb !important; 
+}
+
+.fc .fc-daygrid-day-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start !important; 
+}
 .fc-daygrid-day-number {
-    color: var(--text-muted);
-    font-weight: 600;
-    padding: 6px 8px !important;
-    font-size: 0.9rem;
+    color: var(--text-muted); 
+    font-weight: 600; 
+    padding: 6px 8px !important; 
+    font-size: 0.95rem;
 }
 
-.fc-event {
-    border-radius: 6px;
-    border: none;
-    padding: 4px 6px;
-    font-size: 0.85em;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    color: white !important;
-    margin: 2px 4px !important;
-}
-
-.fc-event:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    z-index: 5 !important;
-}
-
-.fc-scrollgrid {
-    height: 100% !important;
-}
-
+/* =========================================
+   8. SIMETRÍA Y SCROLL INTERNO
+========================================= */
 .fc-daygrid-day-frame {
     position: relative !important;
     height: 100% !important;
@@ -159,28 +209,29 @@ body {
 .fc-daygrid-day-events {
     position: absolute !important;
     top: 30px !important; 
-    bottom: 2px !important;
+    bottom: 2px !important; 
     left: 0 !important;
     right: 0 !important;
-    overflow-y: auto !important; 
     margin: 0 !important;
+    overflow-y: auto !important; 
     min-height: 0 !important; 
+    padding: 0 4px; 
 }
 
-.fc-daygrid-day-bottom {
-    display: none !important;
+.fc-event {
+    border-radius: 4px; 
+    border: none; 
+    padding: 3px 6px; 
+    font-size: 0.85em; 
+    font-weight: 600; 
+    cursor: pointer; 
+    color: white !important; 
+    margin: 2px 0 !important;
+    text-align: left; 
 }
+.fc-event:hover { transform: scale(1.02); z-index: 5 !important; }
 
-.fc-daygrid-day-events::-webkit-scrollbar {
-    width: 5px; 
-}
-.fc-daygrid-day-events::-webkit-scrollbar-track {
-    background: transparent; 
-}
-.fc-daygrid-day-events::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1; 
-    border-radius: 4px;
-}
-.fc-daygrid-day-events::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8; 
-}
+.fc-daygrid-day-events::-webkit-scrollbar { width: 4px; }
+.fc-daygrid-day-events::-webkit-scrollbar-track { background: transparent; }
+.fc-daygrid-day-events::-webkit-scrollbar-thumb { background-color: #9ca3af; border-radius: 4px; }
+.fc-daygrid-day-events::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
