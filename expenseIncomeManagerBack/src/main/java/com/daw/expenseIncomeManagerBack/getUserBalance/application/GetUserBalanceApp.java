@@ -18,6 +18,9 @@ public class GetUserBalanceApp implements GetUserBalanceUseCase {
     public UserBalanceDto execute(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        return new UserBalanceDto(user.getAccount().getBalance());
+        return new UserBalanceDto(
+                user.getAccount().getBalance(),
+                user.getAccount().getBalanceForecast()
+        );
     }
 }

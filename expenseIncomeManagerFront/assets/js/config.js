@@ -27,6 +27,8 @@ function loadBalanceFromBackend() {
         .then(res => res.json())
         .then(data => {
             const balanceElement = document.getElementById('balanceValue');
+            const forecastElement = document.getElementById('balanceForecastValue');
+
             if(balanceElement) {
                 balanceElement.innerText = data.balance.toFixed(2) + " €";
                 balanceElement.classList.remove('text-success', 'text-warning', 'text-danger');
@@ -34,8 +36,12 @@ function loadBalanceFromBackend() {
                 else if (data.balance === 0) balanceElement.classList.add('text-warning');
                 else balanceElement.classList.add('text-danger');
             }
+
+            if(forecastElement) {
+                forecastElement.innerText = data.balanceForecast.toFixed(2) + " €";
+            }
         })
-        .catch(err => console.error('Error cargando saldo:', err));
+        .catch(err => console.error('Error cargando saldos:', err));
 }
 
 function refreshDashboard() {

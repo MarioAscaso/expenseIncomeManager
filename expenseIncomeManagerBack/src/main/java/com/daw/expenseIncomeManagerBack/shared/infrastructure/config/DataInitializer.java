@@ -30,25 +30,25 @@ public class DataInitializer implements CommandLineRunner {
             superAdmin.setUsername("superadmin");
             superAdmin.setPassword(passwordEncoder.encode("1234"));
             superAdmin.setRole(RoleEnum.SUPERADMIN);
-            superAdmin.setAccount(new Account(null, new BigDecimal("1500.00")));
             superAdmin.setEmail("ascasovicentemario@gmail.com");
             superAdmin.setPhoneNumber("673849373");
+            superAdmin.setAccount(new Account(null, new BigDecimal("1500.00"), new BigDecimal("1500.00"), "ES0112345678901234567890"));
 
             User admin = new User();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("1234"));
             admin.setRole(RoleEnum.ADMIN);
-            admin.setAccount(new Account(null, new BigDecimal("500.00")));
             admin.setEmail("bicimadmario@gmail.com");
             admin.setPhoneNumber("638463937");
+            admin.setAccount(new Account(null, new BigDecimal("500.00"), new BigDecimal("500.00"), "ES0209876543210987654321"));
 
             User basicUser = new User();
             basicUser.setUsername("user");
             basicUser.setPassword(passwordEncoder.encode("1234"));
             basicUser.setRole(RoleEnum.BASIC);
-            basicUser.setAccount(new Account(null, new BigDecimal("100.00")));
             basicUser.setEmail("ascasomario27@gmail.com");
             basicUser.setPhoneNumber("600123456");
+            basicUser.setAccount(new Account(null, new BigDecimal("100.00"), new BigDecimal("100.00"), "ES0355566677788899900011"));
 
             userRepository.save(superAdmin);
             userRepository.save(admin);

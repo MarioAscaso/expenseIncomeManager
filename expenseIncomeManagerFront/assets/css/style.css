@@ -1,11 +1,6 @@
-/* Tipografía limpia y legible */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* =========================================
-   1. VARIABLES DE TEMA (Estilo Cuaderno/Ledger)
-========================================= */
 :root {
-    /* Tonos Pizarra/Grafito */
     --primary: #374151;       
     --secondary: #1f2937;     
     --success: #10b981;       
@@ -24,9 +19,6 @@
     --radius-ui: 6px;         
 }
 
-/* =========================================
-   2. BASE DE LA PÁGINA
-========================================= */
 body {
     background-color: var(--bg-color);
     font-family: 'Poppins', sans-serif;
@@ -39,11 +31,7 @@ body {
     flex-direction: column;
 }
 
-/* =========================================
-   3. NAVBAR FUSIONADA CON EL CALENDARIO
-========================================= */
 .custom-navbar { 
-    /* MISMO GRIS QUE LA CABECERA DE LUNES, MARTES... */
     background-color: #d1d5db !important; 
     border-bottom: 1px solid var(--border-color) !important; 
     padding: 0.4rem 0.5rem; 
@@ -51,27 +39,24 @@ body {
     box-shadow: none !important; 
 }
 
-/* Forzamos el color del logo y el mes a gris oscuro (tinta) */
 .navbar-brand, #customCalendarTitle { 
     letter-spacing: -0.5px; 
     color: var(--secondary) !important;
 }
 
-/* Píldora del saldo en blanco para que resalte sobre el gris */
 .balance-badge { 
     background-color: #ffffff; 
     border: 1px solid var(--border-color); 
-    height: 32px; 
-    border-radius: var(--radius-ui) !important;
+    height: auto !important; 
+    padding: 6px 16px !important;
+    border-radius: 50px !important; 
 }
 
-/* Textos (Hola, Admin) oscuros y remarcados */
 .custom-navbar .text-muted {
     color: #374151 !important;
     font-weight: 500;
 }
 
-/* Botones claritos de la navbar (Flechas, Hoy, Campanita) */
 .custom-navbar .btn-light, .custom-navbar .btn-outline-primary {
     background-color: #ffffff !important;
     border-color: var(--border-color) !important;
@@ -81,7 +66,6 @@ body {
     background-color: #f3f4f6 !important;
 }
 
-/* Botones generales (Bizum, Transferencia) */
 .btn, .rounded-pill, .rounded-circle { 
     border-radius: var(--radius-ui) !important; 
     transition: all 0.2s ease; 
@@ -91,9 +75,6 @@ body {
 .btn-primary { background-color: var(--primary) !important; border-color: var(--primary) !important; }
 .btn-primary:hover { background-color: var(--secondary) !important; }
 
-/* =========================================
-   4. FORMULARIOS Y MODALES ESTRUCTURADOS
-========================================= */
 .form-control, .form-select { 
     border-radius: var(--radius-ui); 
     border: 1px solid var(--ui-border); 
@@ -125,9 +106,6 @@ body {
     padding: 1rem 1.5rem; 
 }
 
-/* =========================================
-   5. CONTENEDOR PRINCIPAL DEL CALENDARIO
-========================================= */
 .main-container {
     max-width: 1500px;
     width: 100%;
@@ -148,18 +126,12 @@ body {
     box-shadow: none; 
 }
 
-/* =========================================
-   6. DESTRUCCIÓN DEL SCROLL EXTERNO
-========================================= */
 .fc-scroller, 
 .fc-scroller-liquid-absolute,
 .fc-view-harness {
     overflow: hidden !important; 
 }
 
-/* =========================================
-   7. DISEÑO "CUADRÍCULA DE PAPEL"
-========================================= */
 .fc-theme-standard td, .fc-theme-standard th { 
     border: 1px solid var(--border-color) !important; 
 }
@@ -197,9 +169,6 @@ body {
     font-size: 0.95rem;
 }
 
-/* =========================================
-   8. SIMETRÍA Y SCROLL INTERNO
-========================================= */
 .fc-daygrid-day-frame {
     position: relative !important;
     height: 100% !important;

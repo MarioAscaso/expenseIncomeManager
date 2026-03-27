@@ -28,7 +28,8 @@ public class CreateMovementApp implements CreateMovementUseCase {
     @Override
     @Transactional
     public Movement execute(CreateMovementRequest request) {
-        User user = userRepository.findById(request.getUserId()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         Movement movement = new Movement();
         movement.setDescription(request.getDescription());
@@ -36,8 +37,14 @@ public class CreateMovementApp implements CreateMovementUseCase {
         movement.setType(request.getType());
         movement.setUser(user);
 
+        boolean isFuture = false;
+
         if (request.getDate() != null && !request.getDate().isEmpty()) {
-            movement.setCreatedAt(LocalDate.parse(request.getDate()).atTime(LocalTime.now()));
+            LocalDate movementDate = LocalDate.parse(request.getDate());
+            movement.setCreatedAt(movementDate.atTime(LocalTime.now()));
+            if (movementDate.isAfter(LocalDate.now())) {
+                isFuture = true;
+            }
         }
 
         if (request.getFile() != null && !request.getFile().isEmpty()) {
@@ -46,9 +53,19 @@ public class CreateMovementApp implements CreateMovementUseCase {
         }
 
         if (request.getType() == MovementTypeEnum.INCOME) {
-            user.getAccount().setBalance(user.getAccount().getBalance().add(request.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(request.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().add(request.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(request.getAmount()));
+            }
         } else {
-            user.getAccount().setBalance(user.getAccount().getBalance().subtract(request.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(request.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().subtract(request.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(request.getAmount()));
+            }
         }
 
         userRepository.save(user);

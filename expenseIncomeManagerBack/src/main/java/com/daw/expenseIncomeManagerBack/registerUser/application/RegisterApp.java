@@ -1,15 +1,13 @@
 package com.daw.expenseIncomeManagerBack.registerUser.application;
 
 import com.daw.expenseIncomeManagerBack.registerUser.domain.RegisterUseCase;
-import com.daw.expenseIncomeManagerBack.shared.domain.Account;
-import com.daw.expenseIncomeManagerBack.shared.domain.RoleEnum;
-import com.daw.expenseIncomeManagerBack.shared.domain.User;
-import com.daw.expenseIncomeManagerBack.shared.domain.UserRepository;
+import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Random;
 
 @Service
 public class RegisterApp implements RegisterUseCase {
@@ -36,8 +34,21 @@ public class RegisterApp implements RegisterUseCase {
         newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setRole(RoleEnum.BASIC);
 
-        newUser.setAccount(new Account(null, BigDecimal.ZERO));
+        Account newAccount = new Account();
+        newAccount.setBalance(BigDecimal.ZERO);
+        newAccount.setBalanceForecast(BigDecimal.ZERO);
+        newAccount.setIban(generateSpanishIban());
 
+        newUser.setAccount(newAccount);
         userRepository.save(newUser);
+    }
+
+    private String generateSpanishIban() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder("ES");
+        for (int i = 0; i < 22; i++) {
+            sb.append(random.nextInt(10));
+        }
+        return sb.toString();
     }
 }

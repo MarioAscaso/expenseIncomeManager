@@ -1,5 +1,9 @@
 let fileInputContainer, fileViewer, fileLink, transactionForm, btnDelete, btnSave;
 
+/**
+ * Prepara el modal para crear un nuevo movimiento manual desde el calendario.
+ * @param {string} date - Fecha seleccionada en formato YYYY-MM-DD.
+ */
 function prepareModalForCreation(date) {
     document.getElementById('modalTitle').innerText = 'Nueva Transacción';
     document.getElementById('transactionId').value = '';
@@ -32,6 +36,7 @@ function prepareModalForEdition(event) {
     }
 
     transactionForm.dataset.date = event.startStr;
+    
     const diffInMinutes = (new Date() - new Date(event.start)) / 1000 / 60;
     const remaining = Math.max(0, (5 - diffInMinutes)).toFixed(1); 
     const isExpired = diffInMinutes > 5;
@@ -176,6 +181,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 description: document.getElementById('bizumConcept').value
             };
             executeMoneyTransfer('bizum', payload, 'bizumModal', 'bizumForm', 'Bizum enviado al instante');
+        });
+    }
+
+    const scheduleForm = document.getElementById('scheduleTransferForm');
+    if (scheduleForm) {
+        scheduleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const payload = {
+                originUserId: currentUser.id,
+                targetUsername: document.getElementById('schTargetUser').value,
+                amount: parseFloat(document.getElementById('schAmount').value),
+                description: document.getElementById('schConcept').value,
+                executionDate: document.getElementById('schDate').value
+            };
+
+            fetch(`${API_BASE_URL}/scheduled-transfers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(handleApiResponse)
+            .then(data => {
+                showNotification(data.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+                refreshDashboard();
+            })
+            .catch(err => showNotification(err.message, 'error'));
         });
     }
 });

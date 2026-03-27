@@ -10,11 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // CAPTURAMOS LOS ELEMENTOS (Nos aseguramos de que existan)
             const userInput = document.getElementById('loginUsername');
             const passInput = document.getElementById('loginPassword');
 
-            // Si por algún motivo no los encuentra, paramos aquí para no dar el error de 'null'
             if (!userInput || !passInput) {
                 console.error("No se han encontrado los inputs loginUsername o loginPassword en el HTML");
                 return;
@@ -25,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 password: passInput.value
             };
 
-            // PETICIÓN AL BACKEND
             fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -41,8 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .then(userData => {
-                // GUARDAMOS EL USUARIO EN LOCALSTORAGE
-                // Importante: El backend debe devolver un objeto con id, username y role
                 localStorage.setItem('currentUser', JSON.stringify(userData));
 
                 Swal.fire({
@@ -52,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => {
-                    // REDIRIGIMOS AL INDEX (Panel principal)
                     window.location.href = 'index.html';
                 });
             })

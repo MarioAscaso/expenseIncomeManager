@@ -10,4 +10,5 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class UserBalanceDto {
     private BigDecimal balance;
+    private BigDecimal balanceForecast;
 }

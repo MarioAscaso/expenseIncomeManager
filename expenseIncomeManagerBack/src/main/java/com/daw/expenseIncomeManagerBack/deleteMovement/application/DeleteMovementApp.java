@@ -5,6 +5,8 @@ import com.daw.expenseIncomeManagerBack.shared.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Service
 public class DeleteMovementApp implements DeleteMovementUseCase {
 
@@ -21,15 +23,25 @@ public class DeleteMovementApp implements DeleteMovementUseCase {
     @Override
     @Transactional
     public void execute(Long id) {
-        Movement movement = movementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
+        Movement movement = movementRepository.findById(id).orElseThrow(() -> new RuntimeException("Movimiento no encontrado"));
 
         User user = movement.getUser();
+        boolean isFuture = movement.getCreatedAt().toLocalDate().isAfter(LocalDate.now());
 
         if (movement.getType() == MovementTypeEnum.INCOME) {
-            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            }
         } else {
-            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            }
         }
 
         if (movement.getAttachedFileUrl() != null) {

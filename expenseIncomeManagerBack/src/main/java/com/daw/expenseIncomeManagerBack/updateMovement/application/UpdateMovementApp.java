@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -40,10 +41,22 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
             }
         }
 
+        boolean isFuture = movement.getCreatedAt().toLocalDate().isAfter(LocalDate.now());
+
         if (movement.getType() == MovementTypeEnum.INCOME) {
-            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            }
         } else {
-            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            }
         }
 
         movement.setDescription(request.getDescription());
@@ -51,9 +64,19 @@ public class UpdateMovementApp implements UpdateMovementUseCase {
         movement.setType(request.getType());
 
         if (movement.getType() == MovementTypeEnum.INCOME) {
-            user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().add(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().add(movement.getAmount()));
+            }
         } else {
-            user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+            if (isFuture) {
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            } else {
+                user.getAccount().setBalance(user.getAccount().getBalance().subtract(movement.getAmount()));
+                user.getAccount().setBalanceForecast(user.getAccount().getBalanceForecast().subtract(movement.getAmount()));
+            }
         }
 
         if (request.getFile() != null && !request.getFile().isEmpty()) {
